@@ -1,27 +1,32 @@
+/* eslint-disable no-console */
 import express from 'express'
-import { mapOrder } from '~/utils/sorts.js'
+import { CLOSE_DB, CONNECT_DB, GET_DB } from './config/mongodb'
+import exitHook from 'async-exit-hook'
+import { ENV } from './config/environment'
 
-const app = express()
+const START_SERVER = () => {
+  const app = express()
 
-const hostname = 'localhost'
-const port = 8017
+  app.get('/', async (req, res) => {
+    console.log(await GET_DB().listCollections().toArray())
+    res.end('<h1>Hello World!</h1><hr>')
+  })
 
-app.get('/', (req, res) => {
-  // Test Absolute import mapOrder
-  // eslint-disable-next-line no-console
-  console.log(mapOrder(
-    [{ id: 'id-1', name: 'One' },
-      { id: 'id-2', name: 'Two' },
-      { id: 'id-3', name: 'Three' },
-      { id: 'id-4', name: 'Four' },
-      { id: 'id-5', name: 'Five' }],
-    ['id-5', 'id-4', 'id-2', 'id-3', 'id-1'],
-    'id'
-  ))
-  res.end('<h1>Hello World!</h1><hr>')
-})
+  app.listen(ENV.APP_PORT, ENV.APP_HOST, () => {
+    console.log(`Hello Minapan, I am running at http://${ENV.APP_PORT}:${ENV.APP_HOST}/`)
+  })
 
-app.listen(port, hostname, () => {
-  // eslint-disable-next-line no-console
-  console.log(`Hello Minapan, I am running at http://${hostname}:${port}/`)
-})
+  exitHook(() => {
+    console.log('Goodbye Minapan! I am shutting down...')
+    CLOSE_DB()
+  })
+}
+
+console.log('Connecting to DB...')
+CONNECT_DB()
+  .then(() => console.log('Connected to DB'))
+  .then(() => START_SERVER())
+  .catch((error) => {
+    console.error(error)
+    process.exit(0)
+  })
