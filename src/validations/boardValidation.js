@@ -1,0 +1,29 @@
+import Joi from 'joi'
+import { StatusCodes } from 'http-status-codes'
+
+const createNew = async (req, res, next) => {
+  const correctSchema = Joi.object({
+    title: Joi.string().min(3).max(50).required().trim().strict().messages({
+      'any.required': 'Title is required',
+      'string.empty': 'Title is required',
+      'string.min': 'Title must be at least 3 characters long',
+      'string.max': 'Title must be at most 50 characters long',
+      'string.trim': 'Title must not contain leading or trailing spaces'
+    }),
+    description: Joi.string().min(3).max(256).required().trim().strict()
+  })
+  try {
+    //abortEarly: false - return all errors
+    await correctSchema.validateAsync(req.body, { abortEarly: false })
+    // next()
+    res.status(StatusCodes.CREATED).json({ message: 'Note: API create new board' })
+  } catch (error) {
+    res.status(StatusCodes.UNPROCESSABLE_ENTITY).json({
+      errors: new Error(error).message
+    })
+  }
+}
+
+export const boardValidation = {
+  createNew
+}
