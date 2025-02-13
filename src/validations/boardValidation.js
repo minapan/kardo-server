@@ -19,7 +19,7 @@ const createNew = async (req, res, next) => {
     // pass to next controller
     next()
   } catch (error) {
-    next(ApiError(StatusCodes.UNPROCESSABLE_ENTITY, new Error(error).message))
+    next(new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, new Error(error).message))
   }
 }
 

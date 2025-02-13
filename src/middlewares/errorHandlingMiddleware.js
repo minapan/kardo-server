@@ -9,6 +9,7 @@
  * @returns {void}
  */
 import { StatusCodes } from 'http-status-codes'
+import { ENV } from '~/config/environment'
 
 export const errorHandlingMiddleware = (err, req, res, next) => {
   // If the error does not have a statusCode, set it to 500 (Internal Server Error)
@@ -22,7 +23,7 @@ export const errorHandlingMiddleware = (err, req, res, next) => {
   }
 
   // Only send the stack trace when the environment is set to DEV
-  // if (ENV.BUILD_MODE !== 'dev') delete responseError.stack
+  if (ENV.BUILD_MODE !== 'dev') delete responseError.stack
 
   // Send the responseError object back to the client
   res.status(responseError.statusCode).json(responseError)
