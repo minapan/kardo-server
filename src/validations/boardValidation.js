@@ -1,5 +1,6 @@
 import Joi from 'joi'
 import { StatusCodes } from 'http-status-codes'
+import ApiError from '~/utils/ApiError'
 
 const createNew = async (req, res, next) => {
   const correctSchema = Joi.object({
@@ -13,14 +14,12 @@ const createNew = async (req, res, next) => {
     description: Joi.string().min(3).max(256).required().trim().strict()
   })
   try {
-    //abortEarly: false - return all errors
+    // abortEarly: false - return all errors
     await correctSchema.validateAsync(req.body, { abortEarly: false })
-    // next()
-    res.status(StatusCodes.CREATED).json({ message: 'Note: API create new board' })
+    // pass to next controller
+    next()
   } catch (error) {
-    res.status(StatusCodes.UNPROCESSABLE_ENTITY).json({
-      errors: new Error(error).message
-    })
+    next(ApiError(StatusCodes.UNPROCESSABLE_ENTITY, new Error(error).message))
   }
 }
 

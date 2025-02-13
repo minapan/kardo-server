@@ -1,9 +1,10 @@
 /* eslint-disable no-console */
 import express from 'express'
-import { CLOSE_DB, CONNECT_DB, GET_DB } from './config/mongodb'
+import { CLOSE_DB, CONNECT_DB } from './config/mongodb'
 import exitHook from 'async-exit-hook'
 import { ENV } from './config/environment'
 import { APIs_V1 } from './routes/v1'
+import { errorHandlingMiddleware } from './middlewares/errorHandlingMiddleware'
 
 const START_SERVER = () => {
   const app = express()
@@ -11,6 +12,8 @@ const START_SERVER = () => {
   app.use(express.json()) // Middleware to parse JSON requests
 
   app.use('/v1', APIs_V1) // Register APIs
+
+  app.use(errorHandlingMiddleware) // Register error handling middleware
 
   app.listen(ENV.APP_PORT, ENV.APP_HOST, () => {
     console.log(`Hello Minapan, I am running at http://${ENV.APP_HOST}:${ENV.APP_PORT}/`)
