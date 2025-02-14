@@ -33,6 +33,12 @@ const findOneById = async (id) => {
   } catch (error) { throw new Error(error) }
 }
 
+const getDetails = async (id) => {
+  try {
+    return await GET_DB().collection(BOARD_COLLECTION_NAME).findOne({ _id: new ObjectId(id) })
+  } catch (error) { throw new Error(error) }
+}
+
 const updateById = async (id, updateData) => {
   try {
     const result = await GET_DB().collection(BOARD_COLLECTION_NAME).updateOne(
@@ -55,5 +61,6 @@ export const boardModel = {
   BOARD_COLLECTION_SCHEMA,
   createNew,
   findOneById,
-  updateById
+  updateById,
+  getDetails
 }
