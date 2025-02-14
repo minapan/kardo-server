@@ -4,19 +4,20 @@ import { slugify } from '~/utils/formatters'
 
 const createNew = async (reqBody) => {
   try {
-    const newBoard = {
+    // Create a new board with the slugified title
+    const createdBoard = await boardModel.createNew({
       ...reqBody,
       slug: slugify(reqBody.title)
-    }
+    })
 
-    const createdBoard = await boardModel.createNew(newBoard)
-    const getNewBoard = await boardModel.findOneById(createdBoard.insertedId)
+    // Update the slug with the insertedId
+    await boardModel.updateById(createdBoard.insertedId, {
+      slug: `${slugify(reqBody.title)}-${createdBoard.insertedId.toString()}`
+    })
 
-    // service always must return a value
-    return getNewBoard
-  } catch (error) {
-    throw error
-  }
+    // Service always must return a value
+    return await boardModel.findOneById(createdBoard.insertedId)
+  } catch (error) { throw error }
 }
 
 export const boardService = {

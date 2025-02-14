@@ -1,4 +1,6 @@
+/* eslint-disable no-useless-catch */
 import Joi from 'joi'
+import { ObjectId } from 'mongodb'
 import { GET_DB } from '~/config/mongodb'
 
 const BOARD_COLLECTION_NAME = 'boards'
@@ -13,24 +15,45 @@ const BOARD_COLLECTION_SCHEMA = Joi.object({
   _destroy: Joi.boolean().default(false)
 })
 
+const validate = async (data) => {
+  try {
+    return await BOARD_COLLECTION_SCHEMA.validateAsync(data, { abortEarly: false })
+  } catch (error) { throw new Error(error) }
+}
+
 const createNew = async (data) => {
   try {
-    return await GET_DB().collection(BOARD_COLLECTION_NAME).insertOne(data)
+    return await GET_DB().collection(BOARD_COLLECTION_NAME).insertOne(await validate(data))
   } catch (error) { throw new Error(error) }
 }
 
 const findOneById = async (id) => {
   try {
-    const result = await GET_DB().collection(BOARD_COLLECTION_NAME).findOne({
-      _id: id
-    })
-    return result
+    return await GET_DB().collection(BOARD_COLLECTION_NAME).findOne({ _id: new ObjectId(id) })
   } catch (error) { throw new Error(error) }
+}
+
+const updateById = async (id, updateData) => {
+  try {
+    const result = await GET_DB().collection(BOARD_COLLECTION_NAME).updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updateData }
+    )
+
+    if (result.matchedCount === 0) {
+      throw new Error('Board not found')
+    }
+
+    return result
+  } catch (error) {
+    throw error
+  }
 }
 
 export const boardModel = {
   BOARD_COLLECTION_NAME,
   BOARD_COLLECTION_SCHEMA,
   createNew,
-  findOneById
+  findOneById,
+  updateById
 }
