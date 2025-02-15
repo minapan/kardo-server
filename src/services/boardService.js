@@ -1,5 +1,6 @@
 /* eslint-disable no-useless-catch */
 import { StatusCodes } from 'http-status-codes'
+import { cloneDeep } from 'lodash'
 import { boardModel } from '~/models/boardModel'
 import ApiError from '~/utils/ApiError'
 import { slugify } from '~/utils/formatters'
@@ -26,7 +27,20 @@ const getDetails = async (id) => {
   try {
     const board = await boardModel.getDetails(id)
     if (!board) throw new ApiError(StatusCodes.NOT_FOUND, 'Board not found!')
-    return board
+
+    // Clone board to avoid changing the original data
+    const resBoard = cloneDeep(board)
+
+    // Group cards into columns
+    resBoard.columns?.forEach(column => {
+      // Filter cards that belongs to the current column
+      column.cards = resBoard.cards?.filter(card => card.columnId.equals(column._id))
+    })
+
+    // Remove cards from the board because it's already included in columns
+    delete resBoard.cards
+
+    return resBoard
   } catch (error) { throw error }
 }
 
