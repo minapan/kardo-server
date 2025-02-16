@@ -62,7 +62,7 @@ const getDetails = async (id) => {
           as: 'cards'
         }
       }
-    ]).toArray()[0] || {}
+    ]).toArray()[0] || null
   } catch (error) { throw new Error(error) }
 }
 
@@ -78,9 +78,17 @@ const updateById = async (id, updateData) => {
     }
 
     return result
-  } catch (error) {
-    throw error
-  }
+  } catch (error) { throw new Error(error) }
+}
+
+const pushColumnOrderIds = async (col) => {
+  try {
+    return await GET_DB().collection(BOARD_COLLECTION_NAME).findOneAndUpdate(
+      { _id: new ObjectId(col.boardId) },
+      { $push: { columnOrderIds: new ObjectId(col._id) } },
+      { returnDocument: 'after' }
+    ).value
+  } catch (error) { throw new Error(error) }
 }
 
 export const boardModel = {
@@ -89,5 +97,6 @@ export const boardModel = {
   createNew,
   findOneById,
   updateById,
-  getDetails
+  getDetails,
+  pushColumnOrderIds
 }
