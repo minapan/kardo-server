@@ -14,12 +14,12 @@ const createNew = async (reqBody) => {
     })
 
     // Update the slug with the insertedId
-    await boardModel.updateById(createdBoard.insertedId, {
+    return await boardModel.update(createdBoard.insertedId, {
       slug: `${slugify(reqBody.title)}-${createdBoard.insertedId.toString()}`
     })
 
     // Service always must return a value
-    return await boardModel.findOneById(createdBoard.insertedId)
+    // return await boardModel.findOneById(createdBoard.insertedId)
   } catch (error) { throw error }
 }
 
@@ -44,7 +44,14 @@ const getDetails = async (id) => {
   } catch (error) { throw error }
 }
 
+const update = async (id, reqBody) => {
+  try {
+    return await boardModel.update(id, { ...reqBody, updatedAt: Date.now() })
+  } catch (error) { throw error }
+}
+
 export const boardService = {
   createNew,
-  getDetails
+  getDetails,
+  update
 }

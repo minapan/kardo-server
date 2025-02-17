@@ -19,6 +19,8 @@ const BOARD_COLLECTION_SCHEMA = Joi.object({
   _destroy: Joi.boolean().default(false)
 })
 
+const INVALID_UPDATE_FIELDS = ['_id', 'createdAt']
+
 const validate = async (data) => {
   try {
     return await BOARD_COLLECTION_SCHEMA.validateAsync(data, { abortEarly: false })
@@ -39,7 +41,7 @@ const findOneById = async (id) => {
 
 const getDetails = async (id) => {
   try {
-    return await GET_DB().collection(BOARD_COLLECTION_NAME).aggregate([
+    const result = await GET_DB().collection(BOARD_COLLECTION_NAME).aggregate([
       {
         $match: {
           _id: new ObjectId(id),
@@ -61,16 +63,24 @@ const getDetails = async (id) => {
           foreignField: 'boardId',
           as: 'cards'
         }
-      }
-    ]).toArray()[0] || null
+      },
+      { $limit: 1 }
+    ]).toArray()
+
+    return result.length > 0 ? result[0] : null
   } catch (error) { throw new Error(error) }
 }
 
-const updateById = async (id, updateData) => {
+const update = async (id, updateData) => {
   try {
-    const result = await GET_DB().collection(BOARD_COLLECTION_NAME).updateOne(
+    Object.keys(updateData).forEach(fieldName => {
+      if (INVALID_UPDATE_FIELDS.includes(fieldName)) delete updateData[fieldName]
+    })
+
+    const result = await GET_DB().collection(BOARD_COLLECTION_NAME).findOneAndUpdate(
       { _id: new ObjectId(id) },
-      { $set: updateData }
+      { $set: updateData },
+      { returnDocument: 'after' }
     )
 
     if (result.matchedCount === 0) {
@@ -87,7 +97,7 @@ const pushColumnOrderIds = async (col) => {
       { _id: new ObjectId(col.boardId) },
       { $push: { columnOrderIds: new ObjectId(col._id) } },
       { returnDocument: 'after' }
-    ).value
+    )
   } catch (error) { throw new Error(error) }
 }
 
@@ -96,7 +106,7 @@ export const boardModel = {
   BOARD_COLLECTION_SCHEMA,
   createNew,
   findOneById,
-  updateById,
+  update,
   getDetails,
   pushColumnOrderIds
 }

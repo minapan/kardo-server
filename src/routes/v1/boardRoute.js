@@ -7,7 +7,7 @@ const Router = express.Router()
 
 Router.route('/:id')
   .get(boardController.getDetails)
-  .put()
+  .put(boardValidation.update, boardController.update)
 
 Router.route('/')
   .get((req, res) => {
