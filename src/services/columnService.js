@@ -42,5 +42,6 @@ const deleteItem = async (id) => {
 
 export const columnService = {
   createNew,
-  deleteItem
+  deleteItem,
+  update
 }
