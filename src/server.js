@@ -19,9 +19,16 @@ const START_SERVER = () => {
 
   app.use(errorHandlingMiddleware) // Register error handling middleware
 
-  app.listen(ENV.APP_PORT, ENV.APP_HOST, () => {
-    console.log(`Hello Minapan, I am running at http://${ENV.APP_HOST}:${ENV.APP_PORT}/`)
-  })
+  if (ENV.BUILD_MODE === 'production') {
+    app.listen(process.env.PORT, () => {
+      console.log(`Hello Minapan, I am running at Port: ${process.env.PORT}`)
+    })
+  } else {
+    app.listen(ENV.APP_PORT, ENV.APP_HOST, () => {
+      console.log(`Hello Minapan, I am running at http://${ENV.APP_HOST}:${ENV.APP_PORT}/`)
+    })
+  }
+
 
   exitHook(() => {
     console.log('Goodbye Minapan! I am shutting down...')
