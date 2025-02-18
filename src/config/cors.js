@@ -5,7 +5,7 @@ import { ENV } from './environment'
 
 export const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin && ENV.BUILD_MODE === 'dev') {
+    if (ENV.BUILD_MODE === 'dev') {
       return callback(null, true)
     }
 
