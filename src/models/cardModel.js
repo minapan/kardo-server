@@ -56,7 +56,7 @@ const update = async (id, updateData) => {
     )
 
     if (result.matchedCount === 0) {
-      throw new Error('Column not found')
+      throw new Error('Card not found')
     }
 
     return result

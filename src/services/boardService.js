@@ -1,6 +1,7 @@
 /* eslint-disable no-useless-catch */
 import { StatusCodes } from 'http-status-codes'
 import { cloneDeep } from 'lodash'
+import { v4 as uuidv4 } from 'uuid'
 import { boardModel } from '~/models/boardModel'
 import { cardModel } from '~/models/cardModel'
 import { columnModel } from '~/models/columnModel'
@@ -12,16 +13,11 @@ const createNew = async (reqBody) => {
     // Create a new board with the slugified title
     const createdBoard = await boardModel.createNew({
       ...reqBody,
-      slug: slugify(reqBody.title)
-    })
-
-    // Update the slug with the insertedId
-    return await boardModel.update(createdBoard.insertedId, {
-      slug: `${slugify(reqBody.title)}-${createdBoard.insertedId.toString()}`
+      slug: `${slugify(reqBody.title)}-${uuidv4().slice(0, 6)}`
     })
 
     // Service always must return a value
-    // return await boardModel.findOneById(createdBoard.insertedId)
+    return await boardModel.findOneById(createdBoard.insertedId)
   } catch (error) { throw error }
 }
 

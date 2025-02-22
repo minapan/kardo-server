@@ -1,12 +1,12 @@
 /* eslint-disable no-console */
 import express from 'express'
 import { CLOSE_DB, CONNECT_DB } from './config/mongodb'
-import exitHook from 'async-exit-hook'
 import cors from 'cors'
 import { APIs_V1 } from './routes/v1'
 import { errorHandlingMiddleware } from './middlewares/errorHandlingMiddleware'
 import { corsOptions } from './config/cors'
 import { ENV } from './config/environment'
+import AsyncExitHook from 'async-exit-hook'
 
 const START_SERVER = () => {
   const app = express()
@@ -30,8 +30,7 @@ const START_SERVER = () => {
     })
   }
 
-
-  exitHook(() => {
+  AsyncExitHook(() => {
     console.log('Goodbye Minapan! I am shutting down...')
     CLOSE_DB()
   })
