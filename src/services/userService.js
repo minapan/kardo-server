@@ -4,6 +4,9 @@ import { v4 as uuidv4 } from 'uuid'
 import { userModel } from '~/models/userModel'
 import ApiError from '~/utils/ApiError'
 import { pickUser } from '~/utils/formatters'
+import { CLIENT_URL } from '~/utils/constants'
+import { brevoProvider } from '~/providers/brevoProvider'
+import { CONFIMATION_EMAIL, CONFIRMATION_EMAIL } from '~/utils/emailTemplates'
 
 /* eslint-disable no-useless-catch */
 const createNew = async (reqBody) => {
@@ -30,7 +33,17 @@ const createNew = async (reqBody) => {
       verifyToken: uuidv4()
     })
 
-    return pickUser(await userModel.findOneById(createdUser.insertedId))
+    const getNewUser = await userModel.findOneById(createdUser.insertedId)
+
+    const verifyUrl = `${CLIENT_URL}/account/verify?email=${getNewUser.email}&token=${getNewUser.verifyToken}`
+
+    const subject = 'Verify Your Email 📩'
+    const year = new Date().getFullYear()
+    const htmlContent = CONFIRMATION_EMAIL(getNewUser.displayName, verifyUrl, year)
+
+    await brevoProvider.sendEmail(getNewUser.email, subject, htmlContent)
+
+    return pickUser(getNewUser)
   } catch (error) { throw error }
 }
 

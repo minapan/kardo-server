@@ -1,4 +1,8 @@
+import { ENV } from '~/config/environment'
+
 export const WHITELIST_DOMAINS = [
   'https://trello-web-murex-iota.vercel.app',
-  'https://trello.nhatphan.id.vn'
+  `${ENV.CLIENT_URL_PROD}`
 ]
+
+export const CLIENT_URL = (ENV.BUILD_MODE === 'dev') ? ENV.CLIENT_URL_DEV : ENV.CLIENT_URL_PROD
