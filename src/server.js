@@ -7,9 +7,17 @@ import { errorHandlingMiddleware } from './middlewares/errorHandlingMiddleware'
 import { corsOptions } from './config/cors'
 import { ENV } from './config/environment'
 import AsyncExitHook from 'async-exit-hook'
+import cookieParser from 'cookie-parser'
 
 const START_SERVER = () => {
   const app = express()
+
+  app.use(cookieParser())
+
+  app.use((req, res, next) => {
+    res.set('Cache-Control', 'no-store')
+    next()
+  })
 
   app.use(cors(corsOptions))
 

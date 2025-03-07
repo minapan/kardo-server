@@ -1,21 +1,22 @@
 import express from 'express'
 import { StatusCodes } from 'http-status-codes'
 import { boardController } from '~/controllers/boardController'
+import { authMiddleware } from '~/middlewares/authMiddleware'
 import { boardValidation } from '~/validations/boardValidation'
 
 const Router = express.Router()
 
 Router.route('/:id')
-  .get(boardController.getDetails)
-  .put(boardValidation.update, boardController.update)
+  .get(authMiddleware.isAuthoried, boardController.getDetails)
+  .put(authMiddleware.isAuthoried, boardValidation.update, boardController.update)
 
 Router.route('/supports/moving_card')
-  .put(boardValidation.moveCardToDiffCol, boardController.moveCardToDiffCol)
+  .put(authMiddleware.isAuthoried, boardValidation.moveCardToDiffCol, boardController.moveCardToDiffCol)
 
 Router.route('/')
-  .get((req, res) => {
+  .get(authMiddleware.isAuthoried, (req, res) => {
     res.status(StatusCodes.OK).json({ message: 'Note: API get list boards' })
   })
-  .post(boardValidation.createNew, boardController.createNew)
+  .post(authMiddleware.isAuthoried, boardValidation.createNew, boardController.createNew)
 
 export const boardRoutes = Router
