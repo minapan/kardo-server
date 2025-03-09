@@ -69,6 +69,7 @@ const update = async (id, updateData) => {
   } catch (error) { throw new Error(error) }
 }
 
+
 export const userModel = {
   USER_COLLECTION_NAME,
   USER_COLLECTION_SCHEMA,
