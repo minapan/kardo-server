@@ -6,3 +6,6 @@ export const WHITELIST_DOMAINS = [
 ]
 
 export const CLIENT_URL = (ENV.BUILD_MODE === 'dev') ? ENV.CLIENT_URL_DEV : ENV.CLIENT_URL_PROD
+
+export const DEFAULT_PAGE = 1
+export const DEFAULT_LIMIT = 12

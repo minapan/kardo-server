@@ -14,9 +14,7 @@ Router.route('/supports/moving_card')
   .put(authMiddleware.isAuthoried, boardValidation.moveCardToDiffCol, boardController.moveCardToDiffCol)
 
 Router.route('/')
-  .get(authMiddleware.isAuthoried, (req, res) => {
-    res.status(StatusCodes.OK).json({ message: 'Note: API get list boards' })
-  })
+  .get(authMiddleware.isAuthoried, boardController.getBoards)
   .post(authMiddleware.isAuthoried, boardValidation.createNew, boardController.createNew)
 
 export const boardRoutes = Router

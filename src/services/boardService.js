@@ -1,17 +1,19 @@
 /* eslint-disable no-useless-catch */
 import { StatusCodes } from 'http-status-codes'
 import { cloneDeep } from 'lodash'
+import { ObjectId } from 'mongodb'
 import { v4 as uuidv4 } from 'uuid'
 import { boardModel } from '~/models/boardModel'
 import { cardModel } from '~/models/cardModel'
 import { columnModel } from '~/models/columnModel'
 import ApiError from '~/utils/ApiError'
+import { DEFAULT_LIMIT, DEFAULT_PAGE } from '~/utils/constants'
 import { slugify } from '~/utils/formatters'
 
-const createNew = async (reqBody) => {
+const createNew = async (userId, reqBody) => {
   try {
     // Create a new board with the slugified title
-    const createdBoard = await boardModel.createNew({
+    const createdBoard = await boardModel.createNew(userId, {
       ...reqBody,
       slug: `${slugify(reqBody.title)}-${uuidv4().slice(0, 6)}`
     })
@@ -21,9 +23,9 @@ const createNew = async (reqBody) => {
   } catch (error) { throw error }
 }
 
-const getDetails = async (id) => {
+const getDetails = async (boardId, userId) => {
   try {
-    const board = await boardModel.getDetails(id)
+    const board = await boardModel.getDetails(boardId, userId)
     if (!board) throw new ApiError(StatusCodes.NOT_FOUND, 'Board not found!')
 
     // Clone board to avoid changing the original data
@@ -71,9 +73,19 @@ const moveCardToDiffCol = async (reqBody) => {
   } catch (error) { throw error }
 }
 
+const getBoards = async (userId, page, limit) => {
+  try {
+    if (!page) page = DEFAULT_PAGE
+    if (!limit) limit = DEFAULT_LIMIT
+
+    return await boardModel.getBoards(userId, parseInt(page, 10), parseInt(limit, 10))
+  } catch (error) { throw error }
+}
+
 export const boardService = {
   createNew,
   getDetails,
   update,
-  moveCardToDiffCol
+  moveCardToDiffCol,
+  getBoards
 }
