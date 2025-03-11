@@ -83,11 +83,23 @@ const deleteManyByColId = async (columnId) => {
   } catch (error) { throw new Error(error) }
 }
 
+const unshiftNewComment = async (cardId, commentData) => {
+  try {
+    return await GET_DB().collection(CARD_COLLECTION_NAME).findOneAndUpdate(
+      { _id: new ObjectId(cardId) },
+      // $each and $position 0 to push the new comment to the top
+      { $push: { comments: { $each: [commentData], $position: 0 } } },
+      { returnDocument: 'after' }
+    )
+  } catch (error) { throw new Error(error) }
+}
+
 export const cardModel = {
   CARD_COLLECTION_NAME,
   CARD_COLLECTION_SCHEMA,
   createNew,
   findOneById,
   update,
-  deleteManyByColId
+  deleteManyByColId,
+  unshiftNewComment
 }

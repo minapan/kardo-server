@@ -6,6 +6,7 @@ import { columnModel } from './columnModel'
 import { cardModel } from './cardModel'
 import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
 import { pagingSkip } from '~/utils/algorithms'
+import { userModel } from './userModel'
 
 const BOARD_COLLECTION_NAME = 'boards'
 const BOARD_COLLECTION_SCHEMA = Joi.object({
@@ -82,6 +83,25 @@ const getDetails = async (boardId, userId) => {
           as: 'cards'
         }
       },
+      {
+        $lookup: {
+          from: userModel.USER_COLLECTION_NAME,
+          localField: 'ownerIds',
+          foreignField: '_id',
+          as: 'owners',
+          // $project 0: exclude
+          pipeline: [{ $project: { 'password': 0, 'verifyToken': 0 } }]
+        }
+      },
+      {
+        $lookup: {
+          from: userModel.USER_COLLECTION_NAME,
+          localField: 'memberIds',
+          foreignField: '_id',
+          as: 'members',
+          pipeline: [{ $project: { 'password': 0, 'verifyToken': 0 } }]
+        }
+      },
       { $limit: 1 }
     ]).toArray()
 
@@ -142,7 +162,7 @@ const getBoards = async (id, page, limit) => {
         }
       }
     ],
-    { collation: { locale: 'en', numericOrdering: true } }
+      { collation: { locale: 'en', numericOrdering: true } }
     ).toArray()
 
     const result = query[0]

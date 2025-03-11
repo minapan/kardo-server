@@ -17,7 +17,7 @@ const createNew = async (reqBody) => {
   } catch (error) { throw error }
 }
 
-const update = async (id, reqBody, cardCover) => {
+const update = async (id, reqBody, cardCover, user) => {
   try {
     let updatedCard = {}
 
@@ -25,7 +25,18 @@ const update = async (id, reqBody, cardCover) => {
       const result = await cloudinaryProvider.streamUpload(cardCover.buffer, 'CardCovers')
 
       updatedCard = await cardModel.update(id, { cover: result.secure_url, updatedAt: Date.now() })
-    } else {
+    }
+    else if (reqBody.commentToAdd) {
+      const commentData = {
+        ...reqBody.commentToAdd,
+        commentedAt: Date.now(),
+        userId: user._id,
+        userEmail: user.email
+      }
+
+      updatedCard = await cardModel.unshiftNewComment(id, commentData)
+    }
+    else {
       updatedCard = await cardModel.update(id, { ...reqBody, updatedAt: Date.now() })
     }
 
