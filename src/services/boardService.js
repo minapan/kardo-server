@@ -1,7 +1,6 @@
 /* eslint-disable no-useless-catch */
 import { StatusCodes } from 'http-status-codes'
 import { cloneDeep } from 'lodash'
-import { ObjectId } from 'mongodb'
 import { v4 as uuidv4 } from 'uuid'
 import { boardModel } from '~/models/boardModel'
 import { cardModel } from '~/models/cardModel'

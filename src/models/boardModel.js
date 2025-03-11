@@ -142,7 +142,7 @@ const getBoards = async (id, page, limit) => {
         }
       }
     ],
-      { collation: { locale: 'en', numericOrdering: true } }
+    { collation: { locale: 'en', numericOrdering: true } }
     ).toArray()
 
     const result = query[0]
