@@ -127,7 +127,6 @@ const update = async (id, reqBody, avt) => {
         throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Your current password is incorrect')
 
       updatedUser = await userModel.update(id, {
-        ...reqBody,
         password: bcrypt.hashSync(reqBody.new_password, 8),
         updatedAt: Date.now()
       })
@@ -136,14 +135,13 @@ const update = async (id, reqBody, avt) => {
       const result = await cloudinaryProvider.streamUpload(avt.buffer, 'UserAvatars')
 
       updatedUser = await userModel.update(id, {
-        ...reqBody,
         avatar: result.secure_url,
         updatedAt: Date.now()
       })
     }
     else {
       updatedUser = await userModel.update(id, {
-        ...reqBody,
+        displayName: reqBody.displayName,
         updatedAt: Date.now()
       })
     }

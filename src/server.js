@@ -8,6 +8,9 @@ import { corsOptions } from './config/cors'
 import { ENV } from './config/environment'
 import AsyncExitHook from 'async-exit-hook'
 import cookieParser from 'cookie-parser'
+import http from 'http'
+import socketIo from 'socket.io'
+import { inviteUserToBoardSocket } from './sockets/inviteUserToBoardSocket'
 
 const START_SERVER = () => {
   const app = express()
@@ -27,13 +30,18 @@ const START_SERVER = () => {
 
   app.use(errorHandlingMiddleware) // Register error handling middleware
 
+  // Socket
+  const sever = http.createServer(app)
+  const io = socketIo(sever, { cors: corsOptions })
+  io.on('connection', (socket) => { inviteUserToBoardSocket(socket) })
+
   // Deploy to production or run locally development
   if (ENV.BUILD_MODE === 'production') {
-    app.listen(process.env.PORT, () => {
+    sever.listen(process.env.PORT, () => {
       console.log(`Hello Minapan, I am running in production at Port: ${process.env.PORT}`)
     })
   } else {
-    app.listen(ENV.APP_PORT, ENV.APP_HOST, () => {
+    sever.listen(ENV.APP_PORT, ENV.APP_HOST, () => {
       console.log(`Hello Minapan, I am running in development at http://${ENV.APP_HOST}:${ENV.APP_PORT}/`)
     })
   }
