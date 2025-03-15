@@ -132,7 +132,7 @@ const update = async (id, updateData) => {
   } catch (error) { throw new Error(error) }
 }
 
-const getBoards = async (id, page, limit) => {
+const getBoards = async (id, page, limit, q) => {
   try {
     const queryConditions = [
       { _destroy: false },
@@ -143,6 +143,16 @@ const getBoards = async (id, page, limit) => {
         ]
       }
     ]
+
+    if (q) {
+      Object.keys(q).forEach(fieldName => {
+        // Distinguish between capital and lowercase
+        // queryConditions.push({ [fieldName]: { $regex: q[fieldName] } })
+
+        // Non distinguish between capital and lowercase
+        queryConditions.push({ [fieldName]: { $regex: new RegExp(q[fieldName], 'i') } })
+      })
+    }
 
     const query = await GET_DB().collection(BOARD_COLLECTION_NAME).aggregate([
       { $match: { $and: queryConditions } },

@@ -72,12 +72,12 @@ const moveCardToDiffCol = async (reqBody) => {
   } catch (error) { throw error }
 }
 
-const getBoards = async (userId, page, limit) => {
+const getBoards = async (userId, page, limit, q) => {
   try {
     if (!page) page = DEFAULT_PAGE
     if (!limit) limit = DEFAULT_LIMIT
 
-    return await boardModel.getBoards(userId, parseInt(page, 10), parseInt(limit, 10))
+    return await boardModel.getBoards(userId, parseInt(page, 10), parseInt(limit, 10), q)
   } catch (error) { throw error }
 }
 

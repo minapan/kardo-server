@@ -31,8 +31,8 @@ const moveCardToDiffCol = async (req, res, next) => {
 
 const getBoards = async (req, res, next) => {
   try {
-    const { page, limit } = req.query
-    const boards = await boardService.getBoards(req.jwtDecoded._id, page, limit)
+    const { page, limit, q } = req.query
+    const boards = await boardService.getBoards(req.jwtDecoded._id, page, limit, q)
     res.status(StatusCodes.OK).json(boards)
   } catch (error) { next(error) }
 }
