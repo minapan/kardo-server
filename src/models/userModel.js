@@ -1,7 +1,7 @@
 import Joi from 'joi'
 import { ObjectId } from 'mongodb'
 import { GET_DB } from '~/config/mongodb'
-import { EMAIL_RULE, EMAIL_RULE_MESSAGE } from '~/utils/validators'
+import { EMAIL_RULE, EMAIL_RULE_MESSAGE, OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
 
 const USER_ROLES = {
   CLIENT: 'client',
@@ -20,9 +20,25 @@ const USER_COLLECTION_SCHEMA = Joi.object({
   isActive: Joi.boolean().default(false),
   verifyToken: Joi.string(),
 
+  require_2fa: Joi.boolean().default(false),
+
   createdAt: Joi.date().timestamp('javascript').default(Date.now),
   updatedAt: Joi.date().timestamp('javascript').default(null),
   _destroy: Joi.boolean().default(false)
+})
+
+const TWO_FA_SECRET_KEYS_COLLECTION_NAME = 'two_fa_secret_keys'
+const TWO_FA_SECRET_KEYS_COLLECTION_SCHEMA = Joi.object({
+  user_id: Joi.string().required().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE),
+  value: Joi.string().required()
+})
+
+const USER_SESSIONS_COLLECTION_NAME = 'user_sessions'
+const USER_SESSIONS_COLLECTION_SCHEMA = Joi.object({
+  user_id: Joi.string().required().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE),
+  device_id: Joi.string().required(),
+  is_2fa_verified: Joi.boolean().default(false),
+  last_login: Joi.date().timestamp('javascript').default(null)
 })
 
 const INVALID_UPDATE_FIELDS = ['_id', 'email', 'createdAt', 'username']
@@ -69,12 +85,67 @@ const update = async (id, updateData) => {
   } catch (error) { throw new Error(error) }
 }
 
+const findOne2FASecretKey = async (user_id) => {
+  try {
+    return await GET_DB().collection(TWO_FA_SECRET_KEYS_COLLECTION_NAME).findOne({ user_id: new ObjectId(user_id) })
+  } catch (error) { throw new Error(error) }
+}
+
+const insert2FASecretKey = async (data) => {
+  try {
+    return await GET_DB().collection(TWO_FA_SECRET_KEYS_COLLECTION_NAME).insertOne(data)
+  } catch (error) { throw new Error(error) }
+}
+
+const findOneSession = async (user_id, device_id) => {
+  try {
+    return await GET_DB().collection(USER_SESSIONS_COLLECTION_NAME).findOne({ user_id: new ObjectId(user_id), device_id })
+  } catch (error) { throw new Error(error) }
+}
+
+const insertSession = async (data) => {
+  try {
+    return await GET_DB().collection(USER_SESSIONS_COLLECTION_NAME).insertOne(data)
+  } catch (error) { throw new Error(error) }
+}
+
+const updateSession = async (userId, deviceId, updateData) => {
+  try {
+    const result = await GET_DB().collection(USER_SESSIONS_COLLECTION_NAME).findOneAndUpdate(
+      { user_id: new ObjectId(userId), device_id: deviceId },
+      { $set: updateData },
+      { returnDocument: 'after' }
+    )
+
+    if (result.matchedCount === 0) {
+      throw new Error('Session not found')
+    }
+
+    return result
+  } catch (error) { throw new Error(error) }
+}
+
+const deleteSessions = async (userId, deviceId) => {
+  try {
+    return await GET_DB().collection(USER_SESSIONS_COLLECTION_NAME).deleteMany({ user_id: new ObjectId(userId), device_id: deviceId })
+  } catch (error) { throw new Error(error) }
+}
 
 export const userModel = {
   USER_COLLECTION_NAME,
   USER_COLLECTION_SCHEMA,
+  TWO_FA_SECRET_KEYS_COLLECTION_NAME,
+  TWO_FA_SECRET_KEYS_COLLECTION_SCHEMA,
+  USER_SESSIONS_COLLECTION_NAME,
+  USER_SESSIONS_COLLECTION_SCHEMA,
   createNew,
   findOneById,
   findOneByEmail,
-  update
+  update,
+  findOne2FASecretKey,
+  insert2FASecretKey,
+  updateSession,
+  findOneSession,
+  insertSession,
+  deleteSessions
 }

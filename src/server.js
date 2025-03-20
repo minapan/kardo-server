@@ -31,17 +31,17 @@ const START_SERVER = () => {
   app.use(errorHandlingMiddleware) // Register error handling middleware
 
   // Socket
-  const sever = http.createServer(app)
-  const io = socketIo(sever, { cors: corsOptions })
+  const server = http.createServer(app)
+  const io = socketIo(server, { cors: corsOptions })
   io.on('connection', (socket) => { inviteUserToBoardSocket(socket) })
 
   // Deploy to production or run locally development
   if (ENV.BUILD_MODE === 'production') {
-    sever.listen(process.env.PORT, () => {
+    server.listen(process.env.PORT, () => {
       console.log(`Hello Minapan, I am running in production at Port: ${process.env.PORT}`)
     })
   } else {
-    sever.listen(ENV.APP_PORT, ENV.APP_HOST, () => {
+    server.listen(ENV.APP_PORT, ENV.APP_HOST, () => {
       console.log(`Hello Minapan, I am running in development at http://${ENV.APP_HOST}:${ENV.APP_PORT}/`)
     })
   }

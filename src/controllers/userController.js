@@ -17,9 +17,16 @@ const verifyAccount = async (req, res, next) => {
   } catch (error) { next(error) }
 }
 
+const forgotPassword = async (req, res, next) => {
+  try {
+    const result = await userService.forgotPassword(req.body)
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) { next(error) }
+}
+
 const login = async (req, res, next) => {
   try {
-    const result = await userService.login(req.body)
+    const result = await userService.login(req.body, req.headers['user-agent'])
 
     res.cookie('accessToken', result.accessToken, {
       httpOnly: true,
@@ -41,6 +48,8 @@ const login = async (req, res, next) => {
 
 const logout = async (req, res, next) => {
   try {
+    await userService.logout(req.jwtDecoded._id, req.headers['user-agent'])
+
     res.clearCookie('accessToken')
     res.clearCookie('refreshToken')
 
@@ -70,11 +79,36 @@ const update = async (req, res, next) => {
   } catch (error) { next(error) }
 }
 
+const get2FaQrCode = async (req, res, next) => {
+  try {
+    const result = await userService.get2FaQrCode(req.jwtDecoded._id)
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) { next(error) }
+}
+
+const setup2FA = async (req, res, next) => {
+  try {
+    const result = await userService.setup2FA(req.jwtDecoded._id, req.body.otpToken, req.headers['user-agent'])
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) { next(error) }
+}
+
+const verify2FA = async (req, res, next) => {
+  try {
+    const result = await userService.verify2FA(req.jwtDecoded._id, req.body.otpToken, req.headers['user-agent'])
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) { next(error) }
+}
+
 export const userController = {
   createNew,
   verifyAccount,
   login,
   logout,
   refreshToken,
-  update
+  update,
+  get2FaQrCode,
+  setup2FA,
+  verify2FA,
+  forgotPassword
 }

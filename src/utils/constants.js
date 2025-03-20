@@ -24,3 +24,5 @@ export const CARD_MEMBER_ACTIONS = {
   ADD: 'ADD',
   REMOVE: 'REMOVE'
 }
+
+export const SERVICE_NAME = '2FA - MINHNHATPHAN'

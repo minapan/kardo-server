@@ -16,10 +16,13 @@ Router.route('/verify')
   .put(userValidation.verifyAccount, userController.verifyAccount)
 
 Router.route('/logout')
-  .delete(userController.logout)
+  .put(authMiddleware.isAuthoried, userController.logout)
 
 Router.route('/refresh-token')
   .get(userController.refreshToken)
+
+Router.route('/forgot-password')
+  .get(userController.forgotPassword)
 
 Router.route('/update')
   .put(
@@ -28,5 +31,14 @@ Router.route('/update')
     userValidation.update,
     userController.update
   )
+
+Router.route('/get_2fa_qr_code')
+  .get(authMiddleware.isAuthoried, userController.get2FaQrCode)
+
+Router.route('/setup_2fa')
+  .post(authMiddleware.isAuthoried, userController.setup2FA)
+
+Router.route('/verify_2fa')
+  .put(authMiddleware.isAuthoried, userController.verify2FA)
 
 export const userRoutes = Router
