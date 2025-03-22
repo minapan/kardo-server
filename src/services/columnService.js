@@ -4,10 +4,11 @@ import { boardModel } from '~/models/boardModel'
 import { cardModel } from '~/models/cardModel'
 import { columnModel } from '~/models/columnModel'
 import ApiError from '~/utils/ApiError'
+import { checkAndCleanProfanity } from '~/utils/badWordsFilter'
 
 const createNew = async (reqBody) => {
   try {
-    const createdColumn = await columnModel.createNew({ ...reqBody })
+    const createdColumn = await columnModel.createNew({ ...checkAndCleanProfanity(reqBody) })
 
     const getNewCol = await columnModel.findOneById(createdColumn.insertedId)
 
@@ -22,7 +23,7 @@ const createNew = async (reqBody) => {
 
 const update = async (id, reqBody) => {
   try {
-    return await columnModel.update(id, { ...reqBody, updatedAt: Date.now() })
+    return await columnModel.update(id, { ...checkAndCleanProfanity(reqBody), updatedAt: Date.now() })
   } catch (error) { throw error }
 }
 

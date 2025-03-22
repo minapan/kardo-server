@@ -13,6 +13,7 @@ import { cloudinaryProvider } from '~/providers/cloudinaryProvider'
 import { authenticator } from 'otplib'
 import qrcode from 'qrcode'
 import { ObjectId } from 'mongodb'
+import { checkAndCleanProfanity, cleanText, isBadWord } from '~/utils/badWordsFilter'
 
 /* eslint-disable no-useless-catch */
 const createNew = async (reqBody) => {
@@ -162,7 +163,8 @@ const update = async (id, reqBody, avt) => {
     }
     else {
       updatedUser = await userModel.update(id, {
-        displayName: reqBody.displayName,
+        displayName: isBadWord(reqBody.displayName) ? `TuiKìCục_${uuidv4().slice(0, 4)}` : reqBody.displayName,
+        bio: checkAndCleanProfanity(reqBody.bio),
         updatedAt: Date.now()
       })
     }

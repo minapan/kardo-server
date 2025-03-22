@@ -6,6 +6,7 @@ import { boardModel } from '~/models/boardModel'
 import { cardModel } from '~/models/cardModel'
 import { columnModel } from '~/models/columnModel'
 import ApiError from '~/utils/ApiError'
+import { checkAndCleanProfanity } from '~/utils/badWordsFilter'
 import { DEFAULT_LIMIT, DEFAULT_PAGE } from '~/utils/constants'
 import { slugify } from '~/utils/formatters'
 
@@ -13,7 +14,7 @@ const createNew = async (userId, reqBody) => {
   try {
     // Create a new board with the slugified title
     const createdBoard = await boardModel.createNew(userId, {
-      ...reqBody,
+      ...checkAndCleanProfanity(reqBody),
       slug: `${slugify(reqBody.title)}-${uuidv4().slice(0, 6)}`
     })
 
@@ -45,7 +46,7 @@ const getDetails = async (boardId, userId) => {
 
 const update = async (id, reqBody) => {
   try {
-    return await boardModel.update(id, { ...reqBody, updatedAt: Date.now() })
+    return await boardModel.update(id, { ...checkAndCleanProfanity(reqBody), updatedAt: Date.now() })
   } catch (error) { throw error }
 }
 

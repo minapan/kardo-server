@@ -2,10 +2,11 @@
 import { cardModel } from '~/models/cardModel'
 import { columnModel } from '~/models/columnModel'
 import { cloudinaryProvider } from '~/providers/cloudinaryProvider'
+import { checkAndCleanProfanity } from '~/utils/badWordsFilter'
 
 const createNew = async (reqBody) => {
   try {
-    const createdCard = await cardModel.createNew({ ...reqBody })
+    const createdCard = await cardModel.createNew({ ...checkAndCleanProfanity(reqBody) })
 
     const getNewCard = await cardModel.findOneById(createdCard.insertedId)
 
@@ -28,7 +29,7 @@ const update = async (id, reqBody, cardCover, user) => {
     }
     else if (reqBody.commentToAdd) {
       const commentData = {
-        ...reqBody.commentToAdd,
+        ...checkAndCleanProfanity(reqBody.commentToAdd),
         commentedAt: Date.now(),
         userId: user._id,
         userEmail: user.email
@@ -40,7 +41,7 @@ const update = async (id, reqBody, cardCover, user) => {
       updatedCard = await cardModel.updateMembers(id, reqBody.memberInfo)
     }
     else {
-      updatedCard = await cardModel.update(id, { ...reqBody, updatedAt: Date.now() })
+      updatedCard = await cardModel.update(id, { ...checkAndCleanProfanity(reqBody), updatedAt: Date.now() })
     }
 
     return updatedCard

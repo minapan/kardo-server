@@ -33,6 +33,7 @@
     "http-status-codes": "^2.3.0",
     "joi": "^17.10.2",
     "jsonwebtoken": "^9.0.2",
+    "leo-profanity": "^1.7.0",
     "lodash": "^4.17.21",
     "mongodb": "^6.0.0",
     "ms": "^2.1.3",
