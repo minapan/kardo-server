@@ -136,7 +136,7 @@ const update = async (id, updateData) => {
     }
 
     else if (updateData.updatedLabel) {
-      const updatedLabel = updateData.updatedLabel;
+      const updatedLabel = updateData.updatedLabel
       const updatedLabels = board.labels.map(label =>
         label.id.toString() === updatedLabel.id.toString()
           ? { ...label, name: updatedLabel.name, color: updatedLabel.color }
@@ -222,7 +222,7 @@ const getBoards = async (id, page, limit, q) => {
         }
       }
     ],
-      { collation: { locale: 'en', numericOrdering: true } }
+    { collation: { locale: 'en', numericOrdering: true } }
     ).toArray()
 
     const result = query[0]

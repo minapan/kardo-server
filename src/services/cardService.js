@@ -27,6 +27,7 @@ const update = async (id, reqBody, cardCover, user) => {
 
       updatedCard = await cardModel.update(id, { cover: result.secure_url, updatedAt: Date.now() })
     }
+
     else if (reqBody.commentToAdd) {
       const commentData = {
         ...checkAndCleanProfanity(reqBody.commentToAdd),
@@ -37,12 +38,19 @@ const update = async (id, reqBody, cardCover, user) => {
 
       updatedCard = await cardModel.unshiftNewComment(id, commentData)
     }
+
     else if (reqBody.memberInfo) {
       updatedCard = await cardModel.updateMembers(id, reqBody.memberInfo)
     }
+
     else if (reqBody.labelInfo) {
       updatedCard = await cardModel.updateLabels(id, reqBody.labelInfo)
     }
+
+    else if (reqBody.checklistInfo) {
+      updatedCard = await cardModel.updateChecklists(id, reqBody.checklistInfo)
+    }
+
     else {
       updatedCard = await cardModel.update(id, { ...checkAndCleanProfanity(reqBody), updatedAt: Date.now() })
     }

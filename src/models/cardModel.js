@@ -21,6 +21,16 @@ const CARD_COLLECTION_SCHEMA = Joi.object({
     Joi.string().required()
   ),
 
+  checklists: Joi.array().items({
+    id: Joi.string().required(),
+    title: Joi.string().required().min(1).max(32).trim().strict(),
+    items: Joi.array().items({
+      id: Joi.string().required(),
+      name: Joi.string().required().min(1).max(500).trim().strict(),
+      completed: Joi.boolean().default(false)
+    })
+  }),
+
   comments: Joi.array().items({
     userId: Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE),
     userEmail: Joi.string().pattern(EMAIL_RULE).message(EMAIL_RULE_MESSAGE),
@@ -143,6 +153,70 @@ const unshiftNewComment = async (cardId, commentData) => {
   } catch (error) { throw new Error(error) }
 }
 
+const updateChecklists = async (cardId, checklists) => {
+  try {
+    let updateCondition = { $set: { updatedAt: Date.now() } }
+    let options = { returnDocument: 'after' }
+
+    if (checklists.action === 'ADD_CHECKLIST') {
+      updateCondition.$push = { checklists: checklists.newChecklist }
+    } else if (checklists.action === 'DELETE_CHECKLIST') {
+      updateCondition.$pull = { checklists: { id: checklists.checklistId } }
+    } else if (checklists.action === 'ADD_ITEM') {
+      updateCondition.$push = {
+        'checklists.$[checklist].items': checklists.newItem
+      }
+      options.arrayFilters = [{ 'checklist.id': checklists.checklistId }]
+    } else if (checklists.action === 'DELETE_ITEM') {
+      updateCondition.$pull = {
+        'checklists.$[checklist].items': { id: checklists.itemId }
+      }
+      options.arrayFilters = [{ 'checklist.id': checklists.checklistId }]
+    } else if (checklists.action === 'TOGGLE_ITEM') {
+      const card = await GET_DB()
+        .collection(CARD_COLLECTION_NAME)
+        .findOne({ _id: new ObjectId(cardId) })
+
+      if (!card) {
+        throw new Error('Card not found')
+      }
+
+      const checklist = card.checklists.find((c) => c.id === checklists.checklistId)
+      if (!checklist) {
+        throw new Error('Checklist not found')
+      }
+
+      const item = checklist.items.find((i) => i.id === checklists.itemId)
+      if (!item) {
+        throw new Error('Item not found')
+      }
+
+      updateCondition.$set = {
+        'checklists.$[checklist].items.$[item].completed': !item.completed,
+        updatedAt: Date.now()
+      }
+      options.arrayFilters = [
+        { 'checklist.id': checklists.checklistId },
+        { 'item.id': checklists.itemId }
+      ]
+    }
+
+    const result = await GET_DB()
+      .collection(CARD_COLLECTION_NAME)
+      .findOneAndUpdate(
+        { _id: new ObjectId(cardId) }, // Filter
+        updateCondition, // Update
+        options // Options (bao gồm arrayFilters)
+      )
+
+    if (!result) {
+      throw new Error('Card not found')
+    }
+
+    return result
+  } catch (error) { throw new Error(error) }
+}
+
 export const cardModel = {
   CARD_COLLECTION_NAME,
   CARD_COLLECTION_SCHEMA,
@@ -152,5 +226,6 @@ export const cardModel = {
   deleteManyByColId,
   unshiftNewComment,
   updateMembers,
-  updateLabels
+  updateLabels,
+  updateChecklists
 }
