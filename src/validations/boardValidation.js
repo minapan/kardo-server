@@ -2,6 +2,7 @@ import Joi from 'joi'
 import { StatusCodes } from 'http-status-codes'
 import ApiError from '~/utils/ApiError'
 import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
+import { initLabels } from '~/utils/constants'
 
 const createNew = async (req, res, next) => {
   const correctSchema = Joi.object({
@@ -32,7 +33,12 @@ const update = async (req, res, next) => {
     type: Joi.string().valid('public', 'private'),
     columnOrderIds: Joi.array().items(
       Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE)
-    )
+    ),
+    labels: Joi.array().items({
+      id: Joi.string().required(),
+      name: Joi.string().min(1).max(12).required().trim().strict(),
+      color: Joi.string().required()
+    }).default(initLabels)
   })
   try {
     // abortEarly: false - return all errors

@@ -7,6 +7,7 @@ import { cardModel } from './cardModel'
 import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
 import { pagingSkip } from '~/utils/algorithms'
 import { userModel } from './userModel'
+import { initLabels } from '~/utils/constants'
 
 const BOARD_COLLECTION_NAME = 'boards'
 const BOARD_COLLECTION_SCHEMA = Joi.object({
@@ -14,6 +15,12 @@ const BOARD_COLLECTION_SCHEMA = Joi.object({
   description: Joi.string().min(3).max(256).required().trim().strict(),
   type: Joi.string().valid('public', 'private').required(),
   slug: Joi.string().min(3).required().trim().strict(),
+
+  labels: Joi.array().items({
+    id: Joi.string().required(),
+    name: Joi.string().min(1).max(12).required().trim().strict(),
+    color: Joi.string().required()
+  }).default(initLabels),
 
   columnOrderIds: Joi.array().items(
     Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE)
@@ -115,8 +122,51 @@ const update = async (id, updateData) => {
       if (INVALID_UPDATE_FIELDS.includes(fieldName)) delete updateData[fieldName]
     })
 
+    const board = await findOneById(id)
+
     if (updateData.columnOrderIds)
       updateData.columnOrderIds = updateData.columnOrderIds.map(_id => (new ObjectId(_id)))
+
+    else if (updateData.newLabel) {
+      updateData = {
+        labels: [...board.labels, updateData.newLabel],
+        updateAt: updateData.updatedAt
+      }
+      delete updateData.newLabel
+    }
+
+    else if (updateData.updatedLabel) {
+      const updatedLabel = updateData.updatedLabel;
+      const updatedLabels = board.labels.map(label =>
+        label.id.toString() === updatedLabel.id.toString()
+          ? { ...label, name: updatedLabel.name, color: updatedLabel.color }
+          : label
+      )
+      updateData = {
+        labels: updatedLabels,
+        updatedAt: updateData.updatedAt
+      }
+      delete updateData.updatedLabel
+    }
+
+    else if (updateData.removeLabelId) {
+      const removeLabelId = updateData.removeLabelId
+      const updatedLabels = board.labels.filter(
+        label => label.id.toString() !== removeLabelId.toString()
+      )
+      updateData = {
+        labels: updatedLabels,
+        updatedAt: updateData.updatedAt
+      }
+      delete updateData.removeLabelId
+
+      await GET_DB()
+        .collection(cardModel.CARD_COLLECTION_NAME)
+        .updateMany(
+          { boardId: new ObjectId(id), labelIds: removeLabelId },
+          { $pull: { labelIds: removeLabelId } }
+        )
+    }
 
     const result = await GET_DB().collection(BOARD_COLLECTION_NAME).findOneAndUpdate(
       { _id: new ObjectId(id) },
@@ -172,7 +222,7 @@ const getBoards = async (id, page, limit, q) => {
         }
       }
     ],
-    { collation: { locale: 'en', numericOrdering: true } }
+      { collation: { locale: 'en', numericOrdering: true } }
     ).toArray()
 
     const result = query[0]

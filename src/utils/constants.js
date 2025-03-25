@@ -122,3 +122,9 @@ export const VIE_BADWORDS = [
   // Tiên sư and its variants
   'tiên sư nhà mày', 'tiên sư bố', 'tổ sư'
 ]
+
+export const initLabels = [
+  { id: 'label-1742807284088', name: 'Ưu tiên', color: '#FF5733', isDefault: true },
+  { id: 'label-1742807324321', name: 'Đang làm', color: '#3498DB', isDefault: true },
+  { id: 'label-1742807340661', name: 'Hoàn thành', color: '#27AE60', isDefault: true }
+]

@@ -40,6 +40,9 @@ const update = async (id, reqBody, cardCover, user) => {
     else if (reqBody.memberInfo) {
       updatedCard = await cardModel.updateMembers(id, reqBody.memberInfo)
     }
+    else if (reqBody.labelInfo) {
+      updatedCard = await cardModel.updateLabels(id, reqBody.labelInfo)
+    }
     else {
       updatedCard = await cardModel.update(id, { ...checkAndCleanProfanity(reqBody), updatedAt: Date.now() })
     }

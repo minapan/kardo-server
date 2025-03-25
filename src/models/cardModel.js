@@ -17,6 +17,10 @@ const CARD_COLLECTION_SCHEMA = Joi.object({
     Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE)
   ).default([]),
 
+  labelIds: Joi.array().items(
+    Joi.string().required()
+  ),
+
   comments: Joi.array().items({
     userId: Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE),
     userEmail: Joi.string().pattern(EMAIL_RULE).message(EMAIL_RULE_MESSAGE),
@@ -100,6 +104,28 @@ const updateMembers = async (id, memberInfo) => {
   } catch (error) { throw new Error(error) }
 }
 
+const updateLabels = async (id, labelInfo) => {
+  try {
+    let updateCondition = {}
+    if (labelInfo.action === CARD_MEMBER_ACTIONS.ADD)
+      updateCondition = { $push: { labelIds: labelInfo.labelId } }
+    if (labelInfo.action === CARD_MEMBER_ACTIONS.REMOVE)
+      updateCondition = { $pull: { labelIds: labelInfo.labelId } }
+
+    const result = await GET_DB().collection(CARD_COLLECTION_NAME).findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      updateCondition,
+      { returnDocument: 'after' }
+    )
+
+    if (result.matchedCount === 0) {
+      throw new Error('Card not found')
+    }
+
+    return result
+  } catch (error) { throw new Error(error) }
+}
+
 const deleteManyByColId = async (columnId) => {
   try {
     return await GET_DB().collection(CARD_COLLECTION_NAME).deleteMany({ columnId: new ObjectId(columnId) })
@@ -125,5 +151,6 @@ export const cardModel = {
   update,
   deleteManyByColId,
   unshiftNewComment,
-  updateMembers
+  updateMembers,
+  updateLabels
 }
