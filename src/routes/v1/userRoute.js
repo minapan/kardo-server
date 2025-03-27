@@ -24,6 +24,13 @@ Router.route('/refresh-token')
 Router.route('/forgot-password')
   .get(userController.forgotPassword)
 
+Router.route('/google')
+  .get(userController.googleLogin)
+Router.route('/google/callback')
+  .get(userController.googleCallback)
+Router.route('/get-user')
+  .get(authMiddleware.isAuthoried, userController.getUser)
+
 Router.route('/update')
   .put(
     authMiddleware.isAuthoried,

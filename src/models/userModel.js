@@ -1,4 +1,5 @@
 import Joi from 'joi'
+import { v4 as uuidv4 } from 'uuid'
 import { ObjectId } from 'mongodb'
 import { GET_DB } from '~/config/mongodb'
 import { EMAIL_RULE, EMAIL_RULE_MESSAGE, OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
@@ -8,14 +9,21 @@ const USER_ROLES = {
   ADMIN: 'admin'
 }
 
+const LOGIN_TYPES = {
+  EMAIL: 'email',
+  GOOGLE: 'google'
+}
+
 const USER_COLLECTION_NAME = 'users'
 const USER_COLLECTION_SCHEMA = Joi.object({
   email: Joi.string().required().pattern(EMAIL_RULE).message(EMAIL_RULE_MESSAGE),
-  password: Joi.string().required(),
+  password: Joi.string().allow(null),
   username: Joi.string().required().trim().strict(),
   displayName: Joi.string().required().trim().strict(),
   avatar: Joi.string().default(null),
   role: Joi.string().valid(USER_ROLES.CLIENT, USER_ROLES.ADMIN).default(USER_ROLES.CLIENT),
+  typeLogin: Joi.string().valid(LOGIN_TYPES.EMAIL, LOGIN_TYPES.GOOGLE).default(LOGIN_TYPES.EMAIL),
+  googleId: Joi.string().default(null),
 
   isActive: Joi.boolean().default(false),
   verifyToken: Joi.string(),
@@ -62,6 +70,43 @@ const findOneById = async (id) => {
 const findOneByEmail = async (email) => {
   try {
     return await GET_DB().collection(USER_COLLECTION_NAME).findOne({ email })
+  } catch (error) { throw new Error(error) }
+}
+
+const findOrCreateGoogleUser = async (profile) => {
+  try {
+    const googleId = profile.id
+    const email = profile.emails[0].value
+
+    const existingUser = await findOneByEmail(email)
+    if (existingUser) {
+      if (existingUser.googleId === googleId) return existingUser
+      if (!existingUser.googleId) {
+        const updatedUser = await GET_DB().collection(USER_COLLECTION_NAME).findOneAndUpdate(
+          { email },
+          { $set: { googleId, isActive: true, updatedAt: Date.now() } },
+          { returnDocument: 'after' }
+        )
+        return updatedUser
+      }
+    }
+
+    const newUser = {
+      email: profile.emails[0].value,
+      username: `${profile.emails[0].value.split('@')[0].toLowerCase()}${uuidv4().slice(0, 4)}`,
+      displayName: profile.displayName,
+      googleId: profile.id,
+      typeLogin: LOGIN_TYPES.GOOGLE,
+      avatar: profile.photos?.[0]?.value || null,
+      password: null,
+      role: USER_ROLES.CLIENT,
+      isActive: true
+    }
+
+    const validatedUser = await validate(newUser)
+    const result = await GET_DB().collection(USER_COLLECTION_NAME).insertOne(validatedUser)
+    return { _id: result.insertedId, ...validatedUser }
+
   } catch (error) { throw new Error(error) }
 }
 
@@ -147,5 +192,6 @@ export const userModel = {
   updateSession,
   findOneSession,
   insertSession,
-  deleteSessions
+  deleteSessions,
+  findOrCreateGoogleUser
 }

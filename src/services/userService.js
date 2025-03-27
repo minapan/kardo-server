@@ -13,7 +13,7 @@ import { cloudinaryProvider } from '~/providers/cloudinaryProvider'
 import { authenticator } from 'otplib'
 import qrcode from 'qrcode'
 import { ObjectId } from 'mongodb'
-import { checkAndCleanProfanity, cleanText, isBadWord } from '~/utils/badWordsFilter'
+import { checkAndCleanProfanity, isBadWord } from '~/utils/badWordsFilter'
 
 /* eslint-disable no-useless-catch */
 const createNew = async (reqBody) => {
@@ -92,26 +92,55 @@ const login = async (reqBody, deviceId) => {
       ENV.REFRESH_TOKEN_LIFE
     )
 
-    let currUserSession = await userModel.findOneSession(
+    await userModel.insertSession({
+      user_id: new ObjectId(existUser._id),
+      device_id: deviceId,
+      is_2fa_verified: false,
+      last_login: new Date().valueOf()
+    })
+
+    const currUserSession = await userModel.findOneSession(
       existUser._id,
       deviceId
     )
 
+    let resUser = pickUser(existUser)
+    resUser.is_2fa_verified = currUserSession.is_2fa_verified
+    resUser.last_login = currUserSession.last_login
+
+    return { accessToken, refreshToken, ...resUser }
+  } catch (error) { throw error }
+}
+
+const loginWithGoogle = async (user, deviceId) => {
+  try {
+    const userInfo = { _id: user._id, email: user.email }
+
+    const accessToken = await jwtProvider.generateToken(
+      userInfo,
+      ENV.ACCESS_TOKEN_SECRET_SIGNATURE,
+      ENV.ACCESS_TOKEN_LIFE
+    )
+    const refreshToken = await jwtProvider.generateToken(
+      userInfo,
+      ENV.REFRESH_TOKEN_SECRET_SIGNATURE,
+      ENV.REFRESH_TOKEN_LIFE
+    )
+
+    let currUserSession = await userModel.findOneSession(user._id, deviceId)
     if (!currUserSession) {
       currUserSession = await userModel.insertSession({
-        user_id: new ObjectId(existUser._id),
+        user_id: user._id,
         device_id: deviceId,
         is_2fa_verified: false,
         last_login: new Date().valueOf()
       })
     }
 
-    let resUser = pickUser(existUser)
-    resUser['is_2fa_verified'] = currUserSession.is_2fa_verified
-    resUser['last_login'] = currUserSession.last_login
-
-    return { accessToken, refreshToken, ...pickUser(existUser) }
-  } catch (error) { throw error }
+    return { accessToken, refreshToken }
+  } catch (error) {
+    throw error
+  }
 }
 
 const refreshToken = async (clientRefreshToken) => {
@@ -153,6 +182,14 @@ const update = async (id, reqBody, avt) => {
         updatedAt: Date.now()
       })
     }
+
+    else if (reqBody.new_password) {
+      updatedUser = await userModel.update(id, {
+        password: bcrypt.hashSync(reqBody.new_password, 8),
+        updatedAt: Date.now()
+      })
+    }
+
     else if (avt) {
       const result = await cloudinaryProvider.streamUpload(avt.buffer, 'UserAvatars')
 
@@ -163,7 +200,7 @@ const update = async (id, reqBody, avt) => {
     }
     else {
       updatedUser = await userModel.update(id, {
-        displayName: isBadWord(reqBody.displayName) ? `TuiKìCục_${uuidv4().slice(0, 4)}` : reqBody.displayName,
+        displayName: isBadWord(reqBody.displayName) ? `I'm.Stupid.${uuidv4().slice(0, 6)}` : reqBody.displayName,
         bio: checkAndCleanProfanity(reqBody.bio),
         updatedAt: Date.now()
       })
@@ -277,6 +314,21 @@ const logout = async (userId, deviceId) => {
   } catch (error) { throw error }
 }
 
+const getUser = async (userId, deviceId) => {
+  try {
+    const user = await userModel.findOneById(userId)
+    if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'User not found!')
+
+    let currUserSession = await userModel.findOneSession(user._id, deviceId)
+
+    let resUser = pickUser(user)
+    resUser.is_2fa_verified = currUserSession.is_2fa_verified
+    resUser.last_login = currUserSession.last_login
+
+    return resUser
+  } catch (error) { throw error }
+}
+
 export const userService = {
   createNew,
   verifyAccount,
@@ -286,5 +338,7 @@ export const userService = {
   get2FaQrCode,
   setup2FA,
   logout,
-  verify2FA
+  verify2FA,
+  loginWithGoogle,
+  getUser
 }

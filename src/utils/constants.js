@@ -2,8 +2,11 @@ import { ENV } from '~/config/environment'
 
 export const WHITELIST_DOMAINS = [
   'https://trello-web-murex-iota.vercel.app',
+  'http://localhost:5173',
   `${ENV.CLIENT_URL_PROD}`
 ]
+
+export const OAUTH_ROUTES = ['/v1/users/google', '/v1/users/google/callback']
 
 export const CLIENT_URL = (ENV.BUILD_MODE === 'dev') ? ENV.CLIENT_URL_DEV : ENV.CLIENT_URL_PROD
 

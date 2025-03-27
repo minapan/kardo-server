@@ -14,4 +14,4 @@ Router.route('/')
 Router.route('/board/:invitationId')
   .put(authMiddleware.isAuthoried, invitationController.update)
 
-export const invitationRoute = Router
+export const invitationRoutes = Router

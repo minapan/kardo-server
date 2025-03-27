@@ -22,7 +22,10 @@ const START_SERVER = () => {
     next()
   })
 
-  app.use(cors(corsOptions))
+  // app.use(cors(corsOptions))
+  app.use((req, res, next) => {
+    cors(corsOptions(req, res, next))(req, res, next)
+  })
 
   app.use(express.json()) // Middleware to parse JSON requests
 
