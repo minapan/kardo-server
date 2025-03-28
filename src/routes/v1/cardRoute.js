@@ -17,4 +17,7 @@ Router.route('/:id')
     cardController.update
   )
 
+Router.route('/summarize')
+  .post(authMiddleware.isAuthoried, cardController.summarize)
+
 export const cardRoutes = Router

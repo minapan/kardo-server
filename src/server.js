@@ -4,7 +4,7 @@ import { CLOSE_DB, CONNECT_DB } from './config/mongodb'
 import cors from 'cors'
 import { APIs_V1 } from './routes/v1'
 import { errorHandlingMiddleware } from './middlewares/errorHandlingMiddleware'
-import { corsOptions } from './config/cors'
+import { corsOptions, handleOrigin } from './config/cors'
 import { ENV } from './config/environment'
 import AsyncExitHook from 'async-exit-hook'
 import cookieParser from 'cookie-parser'
@@ -35,7 +35,12 @@ const START_SERVER = () => {
 
   // Socket
   const server = http.createServer(app)
-  const io = socketIo(server, { cors: corsOptions })
+  // const io = socketIo(server, { cors: corsOptions })
+  const io = socketIo(server, {
+    cors: (req, callback) => {
+      return handleOrigin(req, req.headers.origin, callback)
+    }
+  })
   io.on('connection', (socket) => { inviteUserToBoardSocket(socket) })
 
   // Deploy to production or run locally development

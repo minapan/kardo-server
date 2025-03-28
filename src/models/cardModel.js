@@ -31,6 +31,9 @@ const CARD_COLLECTION_SCHEMA = Joi.object({
     })
   }),
 
+  startDate: Joi.date().timestamp('javascript').default(null),
+  dueDate: Joi.date().timestamp('javascript').default(null),
+
   comments: Joi.array().items({
     userId: Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE),
     userEmail: Joi.string().pattern(EMAIL_RULE).message(EMAIL_RULE_MESSAGE),

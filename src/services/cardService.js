@@ -1,7 +1,10 @@
 /* eslint-disable no-useless-catch */
+import { StatusCodes } from 'http-status-codes'
 import { cardModel } from '~/models/cardModel'
 import { columnModel } from '~/models/columnModel'
 import { cloudinaryProvider } from '~/providers/cloudinaryProvider'
+import { geminiProvider } from '~/providers/geminiProvider'
+import ApiError from '~/utils/ApiError'
 import { checkAndCleanProfanity } from '~/utils/badWordsFilter'
 
 const createNew = async (reqBody) => {
@@ -59,7 +62,16 @@ const update = async (id, reqBody, cardCover, user) => {
   } catch (error) { throw error }
 }
 
+const summarize = async (description) => {
+  try {
+    if (!description) throw new ApiError(StatusCodes.BAD_REQUEST, 'Description is required!')
+
+    return await geminiProvider.getSummary(description)
+  } catch (error) { throw error }
+}
+
 export const cardService = {
   createNew,
-  update
+  update,
+  summarize
 }

@@ -14,6 +14,9 @@ importers:
       '@getbrevo/brevo':
         specifier: ^2.1.1
         version: 2.2.0
+      '@google/generative-ai':
+        specifier: ^0.24.0
+        version: 0.24.0
       add:
         specifier: ^2.0.6
         version: 2.0.6
@@ -659,6 +662,10 @@ packages:
 
   '@getbrevo/brevo@2.2.0':
     resolution: {integrity: sha512-mNCkXtgqn6jqLglAx1JzZcTj53kBZ5dK9Yd6zVuEyXAvhz68f5Ps6dSJar9HvkHH0Lfr3NrqW76xurjcoxqhIg==}
+
+  '@google/generative-ai@0.24.0':
+    resolution: {integrity: sha512-fnEITCGEB7NdX0BhoYZ/cq/7WPZ1QS5IzJJfC3Tg/OwkvBetMiVJciyaan297OvE4B9Jg1xvo0zIazX/9sGu1Q==}
+    engines: {node: '>=18.0.0'}
 
   '@hapi/hoek@9.3.0':
     resolution: {integrity: sha512-/c6rf4UJlmHlC9b5BaNvzAcFv7HZ2QHaV0D4/HNlBdvFnvQq8RI4kYdhyPCl7Xj+oWvTWQ8ujhqS53LIgAe6KQ==}
@@ -3277,6 +3284,8 @@ snapshots:
       rewire: 7.0.0
     transitivePeerDependencies:
       - supports-color
+
+  '@google/generative-ai@0.24.0': {}
 
   '@hapi/hoek@9.3.0': {}
 

@@ -3,12 +3,12 @@ import { StatusCodes } from 'http-status-codes'
 import ApiError from '~/utils/ApiError'
 import { ENV } from './environment'
 
-const handleOrigin = (req, origin, callback) => {
+export const handleOrigin = (req, origin, callback) => {
   if (ENV.BUILD_MODE === 'dev') {
     return callback(null, true)
   }
 
-  const isOAuthRoute = OAUTH_ROUTES.some(route => req.originalUrl.startsWith(route))
+  const isOAuthRoute = OAUTH_ROUTES.some(route => req?.originalUrl?.startsWith(route))
 
   if (isOAuthRoute) {
     if (!origin || WHITELIST_DOMAINS.includes(origin)) {

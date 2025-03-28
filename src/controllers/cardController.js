@@ -15,7 +15,15 @@ const update = async (req, res, next) => {
   } catch (error) { next(error) }
 }
 
+const summarize = async (req, res, next) => {
+  try {
+    const summary = await cardService.summarize(req.body.description)
+    res.status(StatusCodes.OK).json(summary)
+  } catch (error) { next(error) }
+}
+
 export const cardController = {
   createNew,
-  update
+  update,
+  summarize
 }
