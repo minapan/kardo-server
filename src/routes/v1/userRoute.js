@@ -22,7 +22,10 @@ Router.route('/refresh-token')
   .get(userController.refreshToken)
 
 Router.route('/forgot-password')
-  .get(userController.forgotPassword)
+  .post(userController.forgotPassword)
+
+Router.route('/reset-password')
+  .put(userValidation.resetPassword, userController.resetPassword)
 
 Router.route('/google')
   .get(userController.googleLogin)

@@ -61,9 +61,25 @@ const update = async (req, res, next) => {
   }
 }
 
-export const userValidation = {
-  createNew,
-  verifyAccount,
-  login,
-  update
+const resetPassword = async (req, res, next) => {
+  const correctSchema = Joi.object({
+    email: Joi.string().required().pattern(EMAIL_RULE).message(EMAIL_RULE_MESSAGE),
+    password: Joi.string().required().pattern(PASSWORD_RULE).message(PASSWORD_RULE_MESSAGE),
+    otpToken: Joi.string().required()
+  })
+
+  try {
+    await correctSchema.validateAsync(req.body, { abortEarly: false, allowUnknown: true })
+    next()
+  } catch (error) {
+    next(new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, new Error(error).message))
+  }
 }
+
+export const userValidation = {
+    createNew,
+    verifyAccount,
+    login,
+    update,
+    resetPassword
+  }

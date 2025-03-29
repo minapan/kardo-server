@@ -3,6 +3,9 @@ import { v4 as uuidv4 } from 'uuid'
 import { ObjectId } from 'mongodb'
 import { GET_DB } from '~/config/mongodb'
 import { EMAIL_RULE, EMAIL_RULE_MESSAGE, OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
+import { brevoProvider } from '~/providers/brevoProvider'
+import { WELCOME_GOOGLE_EMAIL } from '~/utils/emailTemplates'
+import { CLIENT_URL } from '~/utils/constants'
 
 const USER_ROLES = {
   CLIENT: 'client',
@@ -27,6 +30,7 @@ const USER_COLLECTION_SCHEMA = Joi.object({
 
   isActive: Joi.boolean().default(false),
   verifyToken: Joi.string(),
+  verifyTokenExpiresAt: Joi.date().timestamp('javascript').default(null),
 
   require_2fa: Joi.boolean().default(false),
 
@@ -105,6 +109,13 @@ const findOrCreateGoogleUser = async (profile) => {
 
     const validatedUser = await validate(newUser)
     const result = await GET_DB().collection(USER_COLLECTION_NAME).insertOne(validatedUser)
+
+    const subject = 'WELCOME TO MINAPAN 🎉'
+    const year = new Date().getFullYear()
+    const htmlContent = WELCOME_GOOGLE_EMAIL(validatedUser.displayName, `${CLIENT_URL}/login`, year)
+
+    await brevoProvider.sendEmail(validatedUser.email, subject, htmlContent)
+
     return { _id: result.insertedId, ...validatedUser }
 
   } catch (error) { throw new Error(error) }

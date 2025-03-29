@@ -12,6 +12,8 @@ export const slugify = (val) => {
     .replace(/-+/g, '-') // remove consecutive hyphens
 }
 
+export const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString()
+
 export const pickUser = (user) => {
   if (!user) return {}
   return pick(user, ['_id', 'email', 'username', 'displayName', 'bio', 'avatar', 'role', 'isActive', 'typeLogin', 'require_2fa', 'is_2fa_verified', 'last_login', 'createdAt', 'updatedAt'])

@@ -3,10 +3,10 @@ import bcrypt from 'bcryptjs'
 import { v4 as uuidv4 } from 'uuid'
 import { userModel } from '~/models/userModel'
 import ApiError from '~/utils/ApiError'
-import { pickUser } from '~/utils/formatters'
+import { generateOTP, pickUser } from '~/utils/formatters'
 import { CLIENT_URL, SERVICE_NAME } from '~/utils/constants'
 import { brevoProvider } from '~/providers/brevoProvider'
-import { CONFIRMATION_EMAIL } from '~/utils/emailTemplates'
+import { CONFIRMATION_EMAIL, FORGOT_PASSWORD_EMAIL } from '~/utils/emailTemplates'
 import { jwtProvider } from '~/providers/jwtProvider'
 import { ENV } from '~/config/environment'
 import { cloudinaryProvider } from '~/providers/cloudinaryProvider'
@@ -37,7 +37,8 @@ const createNew = async (reqBody) => {
       // the username will be 'john_doe_1234'
       username: `${nameFromEmail.toLowerCase()}${uuidv4().slice(0, 4)}`,
       displayName: nameFromEmail,
-      verifyToken: uuidv4()
+      verifyToken: uuidv4(),
+      verifyTokenExpiresAt: Date.now() + 600000 // 10 minutes
     })
 
     const getNewUser = await userModel.findOneById(createdUser.insertedId)
@@ -59,12 +60,15 @@ const verifyAccount = async (reqBody) => {
     const existUser = await userModel.findOneByEmail(reqBody.email)
     if (!existUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found')
     if (existUser.isActive) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Account already verified')
+    if (existUser.verifyTokenExpiresAt < Date.now())
+      throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'OTP token expired. Please request a new one!')
     if (existUser.verifyToken !== reqBody.token)
       throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Invalid verification token')
 
     const updatedUser = await userModel.update(existUser._id, {
       isActive: true,
-      verifyToken: null
+      verifyToken: null,
+      verifyTokenExpiresAt: null
     })
 
     return pickUser(updatedUser)
@@ -329,6 +333,56 @@ const getUser = async (userId, deviceId) => {
   } catch (error) { throw error }
 }
 
+const forgotPassword = async (reqBody) => {
+  try {
+    const user = await userModel.findOneByEmail(reqBody.email)
+    if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found')
+
+    const lastRequest = user.verifyTokenExpiresAt - 600000 // 10 minutes
+    const waitTime = lastRequest + 60 * 1000 - Date.now() // 1 minute - current time
+
+    if (user.verifyToken && user.verifyTokenExpiresAt > Date.now() && waitTime > 0)
+      throw new ApiError(StatusCodes.NOT_ACCEPTABLE, `Please wait ${Math.ceil(waitTime / 1000)} seconds to request again!`)
+
+    const otpToken = generateOTP()
+
+    await userModel.update(user._id, {
+      require_2fa: false,
+      verifyToken: bcrypt.hashSync(otpToken, 8),
+      verifyTokenExpiresAt: Date.now() + 600000 // 10 minutes
+    })
+
+    const subject = 'Reset Your Password 🔑'
+    const year = new Date().getFullYear()
+    const htmlContent = FORGOT_PASSWORD_EMAIL(user.displayName, otpToken, year)
+
+    await brevoProvider.sendEmail(user.email, subject, htmlContent)
+
+    return otpToken
+  } catch (error) { throw error }
+}
+
+const resetPassword = async (reqBody) => {
+  try {
+    const user = await userModel.findOneByEmail(reqBody.email)
+    if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found')
+
+    if (user.verifyTokenExpiresAt < Date.now())
+      throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'OTP token expired. Please request a new one!')
+
+    const isValid = bcrypt.compareSync(reqBody.otpToken, user.verifyToken)
+    if (!isValid) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Invalid OTP token!')
+
+    await userModel.update(user._id, {
+      password: bcrypt.hashSync(reqBody.password, 8),
+      verifyToken: null,
+      verifyTokenExpiresAt: null
+    })
+
+    return true
+  } catch (error) { throw error }
+}
+
 export const userService = {
   createNew,
   verifyAccount,
@@ -340,5 +394,7 @@ export const userService = {
   logout,
   verify2FA,
   loginWithGoogle,
-  getUser
+  getUser,
+  forgotPassword,
+  resetPassword
 }

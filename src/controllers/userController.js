@@ -27,6 +27,13 @@ const forgotPassword = async (req, res, next) => {
   } catch (error) { next(error) }
 }
 
+const resetPassword = async (req, res, next) => {
+  try {
+    const result = await userService.resetPassword(req.body)
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) { next(error) }
+}
+
 const login = async (req, res, next) => {
   try {
     const result = await userService.login(req.body, req.headers['user-agent'])
@@ -152,6 +159,7 @@ export const userController = {
   setup2FA,
   verify2FA,
   forgotPassword,
+  resetPassword,
   googleLogin,
   googleCallback,
   getUser
