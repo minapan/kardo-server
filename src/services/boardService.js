@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { boardModel } from '~/models/boardModel'
 import { cardModel } from '~/models/cardModel'
 import { columnModel } from '~/models/columnModel'
+import { cloudinaryProvider } from '~/providers/cloudinaryProvider'
 import ApiError from '~/utils/ApiError'
 import { checkAndCleanProfanity } from '~/utils/badWordsFilter'
 import { DEFAULT_LIMIT, DEFAULT_PAGE } from '~/utils/constants'
@@ -82,10 +83,18 @@ const getBoards = async (userId, page, limit, q) => {
   } catch (error) { throw error }
 }
 
+const uploadCoverImage = async (file) => {
+  try {
+    const result = await cloudinaryProvider.streamUpload(file.buffer, 'BoardCovers')
+    return result.secure_url
+  } catch (error) { throw error }
+}
+
 export const boardService = {
   createNew,
   getDetails,
   update,
   moveCardToDiffCol,
-  getBoards
+  getBoards,
+  uploadCoverImage
 }

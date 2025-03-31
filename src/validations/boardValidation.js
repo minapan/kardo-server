@@ -13,8 +13,9 @@ const createNew = async (req, res, next) => {
       'string.max': 'Title must be at most 50 characters long',
       'string.trim': 'Title must not contain leading or trailing spaces'
     }),
-    description: Joi.string().min(3).max(256).required().trim().strict(),
-    type: Joi.string().valid('public', 'private').required()
+    description: Joi.string().max(256).trim().strict().allow(''),
+    cover: Joi.string().default(null)
+    // type: Joi.string().valid('public', 'private').required()
   })
   try {
     // abortEarly: false - return all errors

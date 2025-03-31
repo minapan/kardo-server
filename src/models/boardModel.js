@@ -12,8 +12,9 @@ import { initLabels } from '~/utils/constants'
 const BOARD_COLLECTION_NAME = 'boards'
 const BOARD_COLLECTION_SCHEMA = Joi.object({
   title: Joi.string().min(3).max(50).required().trim().strict(),
-  description: Joi.string().min(3).max(256).required().trim().strict(),
-  type: Joi.string().valid('public', 'private').required(),
+  description: Joi.string().max(256).trim().strict().allow(''),
+  // type: Joi.string().valid('public', 'private').required(),
+  cover: Joi.string().default(null),
   slug: Joi.string().min(3).required().trim().strict(),
 
   labels: Joi.array().items({

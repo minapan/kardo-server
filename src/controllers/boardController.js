@@ -37,10 +37,18 @@ const getBoards = async (req, res, next) => {
   } catch (error) { next(error) }
 }
 
+const uploadCoverImage = async (req, res, next) => {
+  try {
+    const result = await boardService.uploadCoverImage(req.file)
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) { next(error) }
+}
+
 export const boardController = {
   createNew,
   getDetails,
   update,
   moveCardToDiffCol,
-  getBoards
+  getBoards,
+  uploadCoverImage
 }
