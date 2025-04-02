@@ -12,6 +12,9 @@ export const slugify = (val) => {
     .replace(/-+/g, '-') // remove consecutive hyphens
 }
 
+export const getRandomItem = (array) =>
+  array[Math.floor(Math.random() * array.length)]
+
 export const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString()
 
 export const pickUser = (user) => {

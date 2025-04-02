@@ -6,7 +6,7 @@ export const WHITELIST_DOMAINS = [
   `${ENV.CLIENT_URL_PROD}`
 ]
 
-export const OAUTH_ROUTES = ['/v1/users/google', '/v1/users/google/callback']
+export const OAUTH_ROUTES = ['/v1/users/google', '/v1/users/google/callback', '/v1/status', '/v1']
 
 export const CLIENT_URL = (ENV.BUILD_MODE === 'dev') ? ENV.CLIENT_URL_DEV : ENV.CLIENT_URL_PROD
 

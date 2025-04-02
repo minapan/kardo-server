@@ -5,11 +5,30 @@ import { columnRoutes } from './columnRoute'
 import { cardRoutes } from './cardRoute'
 import { userRoutes } from './userRoute'
 import { invitationRoutes } from './invitationRoute'
+import { getRandomItem } from '~/utils/formatters'
+import { quotes } from '~/utils/quotes'
 
 const Router = express.Router()
 
-Router.get('/status', (req, res) => {
+Router.get('/', (req, res) => {
   res.status(StatusCodes.OK).json({ message: 'APIs V1 are ready to use' })
+})
+
+Router.get('/status', (req, res) => {
+  const timestamp = new Intl.DateTimeFormat('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    hour12: false,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  }).format(new Date())
+  const quote = getRandomItem(quotes)
+
+  process.stdout.write(`\n[PING ${timestamp}] - "${quote}"\n`)
+  res.status(StatusCodes.OK).json({ content: quote, timestamp })
 })
 
 Router.use('/users', userRoutes)
