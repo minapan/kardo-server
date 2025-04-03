@@ -16,7 +16,7 @@ const createNew = async (userId, reqBody) => {
     // Create a new board with the slugified title
     const createdBoard = await boardModel.createNew(userId, {
       ...checkAndCleanProfanity(reqBody),
-      slug: `${slugify(reqBody.title)}-${uuidv4().slice(0, 6)}`
+      slug: `${slugify(reqBody.title)}-${uuidv4().slice(0, 4)}`
     })
 
     // Service always must return a value
@@ -86,7 +86,15 @@ const getBoards = async (userId, page, limit, q) => {
 const uploadCoverImage = async (file) => {
   try {
     const result = await cloudinaryProvider.streamUpload(file.buffer, 'BoardCovers')
-    return result.secure_url
+    const thumbnailUrl = result.secure_url.replace(
+      /\/upload\//,
+      '/upload/w_300,h_140,c_fill/'
+    )
+
+    return {
+      cover: result.secure_url,
+      cover_thumb: thumbnailUrl
+    }
   } catch (error) { throw error }
 }
 

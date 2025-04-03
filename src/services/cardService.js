@@ -28,7 +28,14 @@ const update = async (id, reqBody, cardCover, user) => {
     if (cardCover) {
       const result = await cloudinaryProvider.streamUpload(cardCover.buffer, 'CardCovers')
 
-      updatedCard = await cardModel.update(id, { cover: result.secure_url, updatedAt: Date.now() })
+      const thumbnailUrl = result.secure_url.replace(/\/upload\//, '/upload/w_300,h_160,c_fill/')
+      const regularUrl = result.secure_url.replace(/\/upload\//, '/upload/w_1024,h_480,c_fill/')
+
+      updatedCard = await cardModel.update(id, {
+        cover: regularUrl,
+        cover_small: thumbnailUrl,
+        updatedAt: Date.now()
+      })
     }
 
     else if (reqBody.commentToAdd) {

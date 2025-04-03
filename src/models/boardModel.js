@@ -13,9 +13,10 @@ const BOARD_COLLECTION_NAME = 'boards'
 const BOARD_COLLECTION_SCHEMA = Joi.object({
   title: Joi.string().min(3).max(50).required().trim().strict(),
   description: Joi.string().max(256).trim().strict().allow(''),
+  slug: Joi.string().min(3).required().trim().strict(),
   // type: Joi.string().valid('public', 'private').required(),
   cover: Joi.string().default(null),
-  slug: Joi.string().min(3).required().trim().strict(),
+  cover_small: Joi.string().default(null),
 
   labels: Joi.array().items({
     id: Joi.string().required(),

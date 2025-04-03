@@ -14,7 +14,8 @@ const createNew = async (req, res, next) => {
       'string.trim': 'Title must not contain leading or trailing spaces'
     }),
     description: Joi.string().max(256).trim().strict().allow(''),
-    cover: Joi.string().default(null)
+    cover: Joi.string().default(null),
+    cover_small: Joi.string().default(null)
     // type: Joi.string().valid('public', 'private').required()
   })
   try {
@@ -31,7 +32,7 @@ const update = async (req, res, next) => {
   const correctSchema = Joi.object({
     title: Joi.string().min(3).max(50).trim().strict(),
     description: Joi.string().min(3).max(256).trim().strict(),
-    type: Joi.string().valid('public', 'private'),
+    // type: Joi.string().valid('public', 'private'),
     columnOrderIds: Joi.array().items(
       Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE)
     ),
