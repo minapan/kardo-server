@@ -16,7 +16,7 @@ Router.route('/verify')
   .put(userValidation.verifyAccount, userController.verifyAccount)
 
 Router.route('/logout')
-  .put(authMiddleware.isAuthoried, userController.logout)
+  .delete(userController.logout)
 
 Router.route('/refresh-token')
   .get(userController.refreshToken)
@@ -26,6 +26,9 @@ Router.route('/forgot-password')
 
 Router.route('/reset-password')
   .put(userValidation.resetPassword, userController.resetPassword)
+
+Router.route('/delete-account')
+  .put(authMiddleware.isAuthoried, userController.deleteAccount)
 
 Router.route('/google')
   .get(userController.googleLogin)

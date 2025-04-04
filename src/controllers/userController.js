@@ -58,7 +58,7 @@ const login = async (req, res, next) => {
 
 const logout = async (req, res, next) => {
   try {
-    await userService.logout(req.jwtDecoded._id, req.headers['user-agent'])
+    // await userService.logout(req.jwtDecoded._id, req.headers['user-agent'])
 
     res.clearCookie('accessToken')
     res.clearCookie('refreshToken')
@@ -148,9 +148,17 @@ const getUser = async (req, res, next) => {
   } catch (error) { next(error) }
 }
 
+const deleteAccount = async (req, res, next) => {
+  try {
+    const result = await userService.deleteAccount(req.jwtDecoded._id)
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) { next(error) }
+}
+
 export const userController = {
   createNew,
   verifyAccount,
+  deleteAccount,
   login,
   logout,
   refreshToken,

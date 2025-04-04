@@ -67,13 +67,13 @@ const createNew = async (data) => {
 
 const findOneById = async (id) => {
   try {
-    return await GET_DB().collection(USER_COLLECTION_NAME).findOne({ _id: new ObjectId(id) })
+    return await GET_DB().collection(USER_COLLECTION_NAME).findOne({ _id: new ObjectId(id), _destroy: false })
   } catch (error) { throw new Error(error) }
 }
 
 const findOneByEmail = async (email) => {
   try {
-    return await GET_DB().collection(USER_COLLECTION_NAME).findOne({ email })
+    return await GET_DB().collection(USER_COLLECTION_NAME).findOne({ email, _destroy: false })
   } catch (error) { throw new Error(error) }
 }
 

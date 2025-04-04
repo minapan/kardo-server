@@ -99,7 +99,10 @@ const getDetails = async (boardId, userId) => {
           foreignField: '_id',
           as: 'owners',
           // $project 0: exclude
-          pipeline: [{ $project: { 'password': 0, 'verifyToken': 0 } }]
+          pipeline: [
+            { $match: { _destroy: false } },
+            { $project: { password: 0, verifyToken: 0 } }
+          ]
         }
       },
       {
@@ -108,7 +111,10 @@ const getDetails = async (boardId, userId) => {
           localField: 'memberIds',
           foreignField: '_id',
           as: 'members',
-          pipeline: [{ $project: { 'password': 0, 'verifyToken': 0 } }]
+          pipeline: [
+            { $match: { _destroy: false } },
+            { $project: { password: 0, verifyToken: 0 } }
+          ]
         }
       },
       { $limit: 1 }
@@ -224,7 +230,7 @@ const getBoards = async (id, page, limit, q) => {
         }
       }
     ],
-    { collation: { locale: 'en', numericOrdering: true } }
+      { collation: { locale: 'en', numericOrdering: true } }
     ).toArray()
 
     const result = query[0]

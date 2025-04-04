@@ -309,14 +309,14 @@ const verify2FA = async (userId, otpToken, deviceId) => {
   } catch (error) { throw error }
 }
 
-const logout = async (userId, deviceId) => {
-  try {
-    const user = await userModel.findOneById(userId)
-    if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'User not found!')
+// const logout = async (userId, deviceId) => {
+//   try {
+//     const user = await userModel.findOneById(userId)
+//     if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'User not found!')
 
-    await userModel.deleteSessions(userId, deviceId)
-  } catch (error) { throw error }
-}
+//     await userModel.deleteSessions(userId, deviceId)
+//   } catch (error) { throw error }
+// }
 
 const getUser = async (userId, deviceId) => {
   try {
@@ -383,7 +383,17 @@ const resetPassword = async (reqBody) => {
   } catch (error) { throw error }
 }
 
+const deleteAccount = async (userId) => {
+  try {
+    const user = await userModel.findOneById(userId)
+    if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found')
+
+    await userModel.update(userId, { isActive: false, _destroy: true })
+  } catch (error) { throw error }
+}
+
 export const userService = {
+  deleteAccount,
   createNew,
   verifyAccount,
   login,
@@ -391,7 +401,7 @@ export const userService = {
   update,
   get2FaQrCode,
   setup2FA,
-  logout,
+  // logout,
   verify2FA,
   loginWithGoogle,
   getUser,
