@@ -14,4 +14,7 @@ Router.route('/')
 Router.route('/board/:invitationId')
   .put(authMiddleware.isAuthoried, invitationController.update)
 
+Router.route('/:invitationId')
+  .delete(authMiddleware.isAuthoried, invitationController.deleteInvitation)
+
 export const invitationRoutes = Router

@@ -18,8 +18,7 @@ const INVITATION_COLLECTION_SCHEMA = Joi.object({
   }).optional(),
 
   createdAt: Joi.date().timestamp('javascript').default(Date.now),
-  updatedAt: Joi.date().timestamp('javascript').default(null),
-  _destroy: Joi.boolean().default(false)
+  updatedAt: Joi.date().timestamp('javascript').default(null)
 })
 
 const INVALID_UPDATE_FIELDS = ['_id', 'inviterId', 'inviteeId', 'createdAt', 'type']
@@ -81,8 +80,7 @@ const update = async (id, updateData) => {
 const findByUser = async (userId) => {
   try {
     const queryConditions = [
-      { inviteeId: new ObjectId(userId) },
-      { _destroy: false }
+      { inviteeId: new ObjectId(userId) }
     ]
 
     const results = await GET_DB().collection(INVITATION_COLLECTION_NAME).aggregate([
@@ -119,11 +117,18 @@ const findByUser = async (userId) => {
   } catch (error) { throw new Error(error) }
 }
 
+const deleteInvitation = async (invitationId) => {
+  try {
+    return await GET_DB().collection(INVITATION_COLLECTION_NAME).deleteOne({ _id: new ObjectId(invitationId) })
+  } catch (error) { throw new Error(error) }
+}
+
 export const invitationModel = {
   INVITATION_COLLECTION_NAME,
   INVITATION_COLLECTION_SCHEMA,
   createNew,
   findOneById,
   update,
-  findByUser
+  findByUser,
+  deleteInvitation
 }

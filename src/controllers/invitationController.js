@@ -26,8 +26,16 @@ const update = async (req, res, next) => {
   } catch (error) { next(error) }
 }
 
+export const deleteInvitation = async (req, res, next) => {
+  try {
+    const deletedInvitation = await invitationService.deleteInvitation(req.params.invitationId)
+    res.status(StatusCodes.OK).json(deletedInvitation)
+  } catch (error) { next(error) }
+}
+
 export const invitationController = {
   createNew,
   getInvitations,
-  update
+  update,
+  deleteInvitation
 }

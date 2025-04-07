@@ -91,8 +91,21 @@ const update = async (userId, invitationId, status) => {
   } catch (error) { throw error }
 }
 
+const deleteInvitation = async (invitationId) => {
+  // eslint-disable-next-line no-useless-catch
+  try {
+    const invitation = await invitationModel.findOneById(invitationId)
+    if (!invitation) throw new ApiError(StatusCodes.NOT_FOUND, 'Invitation not found')
+
+    await invitationModel.deleteInvitation(invitationId)
+
+    return invitationId
+  } catch (error) { throw error }
+}
+
 export const invitationService = {
   createNew,
   getInvitations,
-  update
+  update,
+  deleteInvitation
 }
