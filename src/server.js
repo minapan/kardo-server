@@ -10,7 +10,7 @@ import AsyncExitHook from 'async-exit-hook'
 import cookieParser from 'cookie-parser'
 import http from 'http'
 import socketIo from 'socket.io'
-import { inviteUserToBoardSocket } from './sockets/inviteUserToBoardSocket'
+import { boardSocket } from './sockets/boardSocket'
 
 const START_SERVER = () => {
   const app = express()
@@ -41,7 +41,11 @@ const START_SERVER = () => {
       return handleOrigin(req, req.headers.origin, callback)
     }
   })
-  io.on('connection', (socket) => { inviteUserToBoardSocket(socket) })
+  // io.on('connection', (socket) => { inviteUserToBoardSocket(socket) })
+  io.on('connection', socket => {
+    // console.log(`Client ${socket.id} connected`)
+    boardSocket(socket)
+  })
 
   // Deploy to production or run locally development
   if (ENV.BUILD_MODE === 'production') {
