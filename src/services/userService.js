@@ -12,8 +12,11 @@ import { ENV } from '~/config/environment'
 import { cloudinaryProvider } from '~/providers/cloudinaryProvider'
 import { authenticator } from 'otplib'
 import qrcode from 'qrcode'
+import geoip from 'geoip-lite'
 import { ObjectId } from 'mongodb'
 import { checkAndCleanProfanity, isBadWord } from '~/utils/badWordsFilter'
+import { sessionModel } from '~/models/sessionModel'
+import { GET_DB } from '~/config/mongodb'
 
 /* eslint-disable no-useless-catch */
 const createNew = async (reqBody) => {
@@ -75,7 +78,7 @@ const verifyAccount = async (reqBody) => {
   } catch (error) { throw error }
 }
 
-const login = async (reqBody, deviceId) => {
+const login = async (reqBody, deviceId, ip) => {
   try {
     const existUser = await userModel.findOneByEmail(reqBody.email)
     if (!existUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found')
@@ -96,17 +99,26 @@ const login = async (reqBody, deviceId) => {
       ENV.REFRESH_TOKEN_LIFE
     )
 
-    await userModel.insertSession({
-      user_id: new ObjectId(existUser._id),
-      device_id: deviceId,
-      is_2fa_verified: false,
-      last_login: new Date().valueOf()
-    })
+    const geo = geoip.lookup(ip) || { country: 'Unknown', city: 'Unknown' }
+    const sessionCount = await GET_DB().collection(sessionModel.USER_SESSIONS_COLLECTION_NAME).countDocuments({ user_id: new ObjectId(existUser._id) })
+    const maxSessions = existUser.max_sessions || 2
+    if (sessionCount >= maxSessions) {
+      await sessionModel.deleteOldestSession(existUser._id)
+    }
 
-    const currUserSession = await userModel.findOneSession(
-      existUser._id,
-      deviceId
-    )
+    let currUserSession = await sessionModel.findOneSession(refreshToken)
+    if (!currUserSession) {
+      currUserSession = await sessionModel.insertSession({
+        user_id: new ObjectId(existUser._id),
+        refresh_token: refreshToken,
+        device_id: deviceId,
+        ip_address: ip,
+        location: { country: geo.country, city: geo.city },
+        is_2fa_verified: false,
+        last_login: new Date().valueOf(),
+        last_active: new Date().valueOf()
+      })
+    }
 
     let resUser = pickUser(existUser)
     resUser.is_2fa_verified = currUserSession.is_2fa_verified
@@ -116,9 +128,9 @@ const login = async (reqBody, deviceId) => {
   } catch (error) { throw error }
 }
 
-const loginWithGoogle = async (user, deviceId) => {
+const loginWithGoogle = async (user, deviceId, ip) => {
   try {
-    const userInfo = { _id: user._id, email: user.email }
+    const userInfo = await userModel.findOneByEmail(user.email)
 
     const accessToken = await jwtProvider.generateToken(
       userInfo,
@@ -131,13 +143,24 @@ const loginWithGoogle = async (user, deviceId) => {
       ENV.REFRESH_TOKEN_LIFE
     )
 
-    let currUserSession = await userModel.findOneSession(user._id, deviceId)
+    const geo = geoip.lookup(ip) || { country: 'Unknown', city: 'Unknown' }
+    const sessionCount = await GET_DB().collection(sessionModel.USER_SESSIONS_COLLECTION_NAME).countDocuments({ user_id: new ObjectId(userInfo._id) })
+    const maxSessions = userInfo.max_sessions || 2
+    if (sessionCount >= maxSessions) {
+      await sessionModel.deleteOldestSession(userInfo._id)
+    }
+
+    let currUserSession = await sessionModel.findOneSession(refreshToken)
     if (!currUserSession) {
-      currUserSession = await userModel.insertSession({
-        user_id: user._id,
+      currUserSession = await sessionModel.insertSession({
+        user_id: new ObjectId(userInfo._id),
+        refresh_token: refreshToken,
         device_id: deviceId,
+        ip_address: ip,
+        location: { country: geo.country, city: geo.city },
         is_2fa_verified: false,
-        last_login: new Date().valueOf()
+        last_login: new Date().valueOf(),
+        last_active: new Date().valueOf()
       })
     }
 
@@ -149,6 +172,9 @@ const loginWithGoogle = async (user, deviceId) => {
 
 const refreshToken = async (clientRefreshToken) => {
   try {
+    const existSession = await sessionModel.findOneSession(clientRefreshToken)
+    if (!existSession) throw new ApiError(StatusCodes.FORBIDDEN, 'Please login!')
+
     const refreshTokenDecoded = await jwtProvider.verifyToken(
       clientRefreshToken,
       ENV.REFRESH_TOKEN_SECRET_SIGNATURE
@@ -164,6 +190,8 @@ const refreshToken = async (clientRefreshToken) => {
       ENV.ACCESS_TOKEN_SECRET_SIGNATURE,
       ENV.ACCESS_TOKEN_LIFE
     )
+
+    await sessionModel.updateSession(clientRefreshToken, { last_active: new Date().valueOf() })
 
     return { accessToken }
   } catch (error) { throw error }
@@ -309,21 +337,21 @@ const verify2FA = async (userId, otpToken, deviceId) => {
   } catch (error) { throw error }
 }
 
-// const logout = async (userId, deviceId) => {
-//   try {
-//     const user = await userModel.findOneById(userId)
-//     if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'User not found!')
+const logout = async (refreshToken) => {
+  try {
+    const session = await sessionModel.findOneSession(refreshToken)
+    if (session) await sessionModel.deleteSession(session._id)
 
-//     await userModel.deleteSessions(userId, deviceId)
-//   } catch (error) { throw error }
-// }
+    return true
+  } catch (error) { throw error }
+}
 
-const getUser = async (userId, deviceId) => {
+const getUser = async (refreshToken, userId) => {
   try {
     const user = await userModel.findOneById(userId)
     if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'User not found!')
 
-    let currUserSession = await userModel.findOneSession(user._id, deviceId)
+    let currUserSession = await sessionModel.findOneSession(refreshToken)
 
     let resUser = pickUser(user)
     resUser.is_2fa_verified = currUserSession.is_2fa_verified
@@ -401,7 +429,7 @@ export const userService = {
   update,
   get2FaQrCode,
   setup2FA,
-  // logout,
+  logout,
   verify2FA,
   loginWithGoogle,
   getUser,

@@ -7,6 +7,7 @@ import { userRoutes } from './userRoute'
 import { invitationRoutes } from './invitationRoute'
 import { getRandomItem } from '~/utils/formatters'
 import { quotes } from '~/utils/quotes'
+import { sessionRoutes } from './sessionRoute'
 
 const Router = express.Router()
 
@@ -36,5 +37,6 @@ Router.use('/invitations', invitationRoutes)
 Router.use('/boards', boardRoutes)
 Router.use('/columns', columnRoutes)
 Router.use('/cards', cardRoutes)
+Router.use('/sessions', sessionRoutes)
 
 export const APIs_V1 = Router

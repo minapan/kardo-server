@@ -1,10 +1,17 @@
 import { StatusCodes } from 'http-status-codes'
 import { ENV } from '~/config/environment'
+import { sessionModel } from '~/models/sessionModel'
 import { jwtProvider } from '~/providers/jwtProvider'
 import ApiError from '~/utils/ApiError'
 
 const isAuthoried = async (req, res, next) => {
   const clientAccessToken = req.cookies?.accessToken
+  const mySession = await sessionModel.findOneSession(req.cookies?.refreshToken)
+
+  if (!mySession) {
+    next(new ApiError(StatusCodes.UNAUTHORIZED, 'Unauthorized! (Session not found)'))
+    return
+  }
 
   if (!clientAccessToken) {
     next(new ApiError(StatusCodes.UNAUTHORIZED, 'Unauthorized! (Access token not found)'))

@@ -36,7 +36,7 @@ const resetPassword = async (req, res, next) => {
 
 const login = async (req, res, next) => {
   try {
-    const result = await userService.login(req.body, req.headers['user-agent'])
+    const result = await userService.login(req.body, req.headers['user-agent'], req.ip)
 
     res.cookie('accessToken', result.accessToken, {
       httpOnly: true,
@@ -58,12 +58,14 @@ const login = async (req, res, next) => {
 
 const logout = async (req, res, next) => {
   try {
-    // await userService.logout(req.jwtDecoded._id, req.headers['user-agent'])
+    let isDeletedSession = false
+    if (req.cookies?.refreshToken)
+      isDeletedSession = await userService.logout(req.cookies?.refreshToken)
 
     res.clearCookie('accessToken')
     res.clearCookie('refreshToken')
 
-    res.status(StatusCodes.OK).json({ loggedOut: true })
+    res.status(StatusCodes.OK).json({ loggedOut: true, isDeletedSession })
   } catch (error) { next(error) }
 }
 
@@ -116,9 +118,7 @@ const googleCallback = [
   passportProvider.ggAuth().authenticate('google', { session: false }),
   async (req, res) => {
     try {
-      const user = req.user
-      const deviceId = req.headers['user-agent'] || 'unknown_device'
-      const result = await userService.loginWithGoogle(user, deviceId)
+      const result = await userService.loginWithGoogle(req.user, req.headers['user-agent'], req.ip)
 
       res.cookie('accessToken', result.accessToken, {
         httpOnly: true,
@@ -143,7 +143,7 @@ const googleCallback = [
 
 const getUser = async (req, res, next) => {
   try {
-    const result = await userService.getUser(req.jwtDecoded._id, req.headers['user-agent'])
+    const result = await userService.getUser(req.cookies?.refreshToken, req.jwtDecoded._id)
     res.status(StatusCodes.OK).json(result)
   } catch (error) { next(error) }
 }

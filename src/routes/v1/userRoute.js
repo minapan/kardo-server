@@ -16,7 +16,7 @@ Router.route('/verify')
   .put(userValidation.verifyAccount, userController.verifyAccount)
 
 Router.route('/logout')
-  .delete(userController.logout)
+  .put(userController.logout)
 
 Router.route('/refresh-token')
   .get(userController.refreshToken)
