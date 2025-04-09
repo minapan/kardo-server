@@ -29,14 +29,14 @@ const forgotPassword = async (req, res, next) => {
 
 const resetPassword = async (req, res, next) => {
   try {
-    const result = await userService.resetPassword(req.body)
+    const result = await userService.resetPassword(req.body, req.cookies?.refreshToken)
     res.status(StatusCodes.OK).json(result)
   } catch (error) { next(error) }
 }
 
 const login = async (req, res, next) => {
   try {
-    const result = await userService.login(req.body, req.headers['user-agent'], req.ip)
+    const result = await userService.login(req.body, req.headers['user-agent'])
 
     res.cookie('accessToken', result.accessToken, {
       httpOnly: true,
@@ -86,7 +86,7 @@ const refreshToken = async (req, res, next) => {
 
 const update = async (req, res, next) => {
   try {
-    const updatedUser = await userService.update(req.jwtDecoded._id, req.body, req.file)
+    const updatedUser = await userService.update(req.jwtDecoded._id, req.body, req.file, req.cookies?.refreshToken)
     res.status(StatusCodes.OK).json(updatedUser)
   } catch (error) { next(error) }
 }
@@ -100,14 +100,14 @@ const get2FaQrCode = async (req, res, next) => {
 
 const setup2FA = async (req, res, next) => {
   try {
-    const result = await userService.setup2FA(req.jwtDecoded._id, req.body.otpToken, req.headers['user-agent'])
+    const result = await userService.setup2FA(req.jwtDecoded._id, req.body.otpToken, req.cookies?.refreshToken)
     res.status(StatusCodes.OK).json(result)
   } catch (error) { next(error) }
 }
 
 const verify2FA = async (req, res, next) => {
   try {
-    const result = await userService.verify2FA(req.jwtDecoded._id, req.body.otpToken, req.headers['user-agent'])
+    const result = await userService.verify2FA(req.jwtDecoded._id, req.body.otpToken, req.cookies?.refreshToken)
     res.status(StatusCodes.OK).json(result)
   } catch (error) { next(error) }
 }
@@ -118,7 +118,7 @@ const googleCallback = [
   passportProvider.ggAuth().authenticate('google', { session: false }),
   async (req, res) => {
     try {
-      const result = await userService.loginWithGoogle(req.user, req.headers['user-agent'], req.ip)
+      const result = await userService.loginWithGoogle(req.user, req.headers['user-agent'])
 
       res.cookie('accessToken', result.accessToken, {
         httpOnly: true,

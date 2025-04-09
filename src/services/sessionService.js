@@ -16,7 +16,7 @@ const getSessions = async (userId, refreshToken) => {
 
     const result = sessions.map((s) => ({
       ...s,
-      is_current: (s.device_id === currSession?.device_id && s.last_login === currSession?.last_login)
+      is_current: (s.device_info?.os === currSession?.device_info?.os && s.last_login === currSession?.last_login)
     }))
 
     return result

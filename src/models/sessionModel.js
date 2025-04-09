@@ -7,11 +7,9 @@ const USER_SESSIONS_COLLECTION_NAME = 'user_sessions'
 const USER_SESSIONS_COLLECTION_SCHEMA = Joi.object({
   user_id: Joi.string().required().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE),
   refresh_token: Joi.string().required(),
-  ip_address: Joi.string().required(),
-  device_id: Joi.string().required(),
-  location: Joi.object({
-    country: Joi.string().required(),
-    city: Joi.string().required()
+  device_info: Joi.object({
+    browser: Joi.string(),
+    os: Joi.string()
   }).allow(null),
   is_2fa_verified: Joi.boolean().default(false),
   last_login: Joi.date().timestamp('javascript').default(null),

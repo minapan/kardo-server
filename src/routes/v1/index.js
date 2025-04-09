@@ -32,6 +32,11 @@ Router.get('/status', (req, res) => {
   res.status(StatusCodes.OK).json({ content: quote, timestamp })
 })
 
+Router.get('/server-time', (req, res) => {
+  const serverTimestamp = Date.now()
+  res.status(200).json({ serverTime: serverTimestamp })
+})
+
 Router.use('/users', userRoutes)
 Router.use('/invitations', invitationRoutes)
 Router.use('/boards', boardRoutes)

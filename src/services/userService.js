@@ -12,11 +12,11 @@ import { ENV } from '~/config/environment'
 import { cloudinaryProvider } from '~/providers/cloudinaryProvider'
 import { authenticator } from 'otplib'
 import qrcode from 'qrcode'
-import geoip from 'geoip-lite'
 import { ObjectId } from 'mongodb'
 import { checkAndCleanProfanity, isBadWord } from '~/utils/badWordsFilter'
 import { sessionModel } from '~/models/sessionModel'
 import { GET_DB } from '~/config/mongodb'
+const uap = require('ua-parser-js')
 
 /* eslint-disable no-useless-catch */
 const createNew = async (reqBody) => {
@@ -78,7 +78,7 @@ const verifyAccount = async (reqBody) => {
   } catch (error) { throw error }
 }
 
-const login = async (reqBody, deviceId, ip) => {
+const login = async (reqBody, deviceId) => {
   try {
     const existUser = await userModel.findOneByEmail(reqBody.email)
     if (!existUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found')
@@ -99,7 +99,8 @@ const login = async (reqBody, deviceId, ip) => {
       ENV.REFRESH_TOKEN_LIFE
     )
 
-    const geo = geoip.lookup(ip) || { country: 'Unknown', city: 'Unknown' }
+    const ua = uap(deviceId)
+
     const sessionCount = await GET_DB().collection(sessionModel.USER_SESSIONS_COLLECTION_NAME).countDocuments({ user_id: new ObjectId(existUser._id) })
     const maxSessions = existUser.max_sessions || 2
     if (sessionCount >= maxSessions) {
@@ -111,9 +112,10 @@ const login = async (reqBody, deviceId, ip) => {
       currUserSession = await sessionModel.insertSession({
         user_id: new ObjectId(existUser._id),
         refresh_token: refreshToken,
-        device_id: deviceId,
-        ip_address: ip,
-        location: { country: geo.country, city: geo.city },
+        device_info: {
+          browser: `${ua?.browser?.name || 'Unknown'} ${ua?.browser?.version || ''}`,
+          os: `${ua?.os?.name || 'Unknown'} ${ua?.os?.version || ''}`
+        },
         is_2fa_verified: false,
         last_login: new Date().valueOf(),
         last_active: new Date().valueOf()
@@ -128,7 +130,7 @@ const login = async (reqBody, deviceId, ip) => {
   } catch (error) { throw error }
 }
 
-const loginWithGoogle = async (user, deviceId, ip) => {
+const loginWithGoogle = async (user, deviceId) => {
   try {
     const userInfo = await userModel.findOneByEmail(user.email)
 
@@ -143,7 +145,8 @@ const loginWithGoogle = async (user, deviceId, ip) => {
       ENV.REFRESH_TOKEN_LIFE
     )
 
-    const geo = geoip.lookup(ip) || { country: 'Unknown', city: 'Unknown' }
+    const ua = uap(deviceId)
+
     const sessionCount = await GET_DB().collection(sessionModel.USER_SESSIONS_COLLECTION_NAME).countDocuments({ user_id: new ObjectId(userInfo._id) })
     const maxSessions = userInfo.max_sessions || 2
     if (sessionCount >= maxSessions) {
@@ -155,9 +158,10 @@ const loginWithGoogle = async (user, deviceId, ip) => {
       currUserSession = await sessionModel.insertSession({
         user_id: new ObjectId(userInfo._id),
         refresh_token: refreshToken,
-        device_id: deviceId,
-        ip_address: ip,
-        location: { country: geo.country, city: geo.city },
+        device_info: {
+          browser: `${ua?.browser?.name || 'Unknown'} ${ua?.browser?.version || ''}`,
+          os: `${ua?.os?.name || 'Unknown'} ${ua?.os?.version || ''}`
+        },
         is_2fa_verified: false,
         last_login: new Date().valueOf(),
         last_active: new Date().valueOf()
@@ -197,7 +201,7 @@ const refreshToken = async (clientRefreshToken) => {
   } catch (error) { throw error }
 }
 
-const update = async (id, reqBody, avt) => {
+const update = async (id, reqBody, avt, refreshToken) => {
   try {
     const existUser = await userModel.findOneById(id)
     if (!existUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found')
@@ -213,6 +217,8 @@ const update = async (id, reqBody, avt) => {
         password: bcrypt.hashSync(reqBody.new_password, 8),
         updatedAt: Date.now()
       })
+
+      await sessionModel.clearSessions(existUser._id, refreshToken)
     }
 
     else if (reqBody.new_password) {
@@ -273,7 +279,7 @@ const get2FaQrCode = async (userId) => {
   } catch (error) { throw error }
 }
 
-const setup2FA = async (userId, otpToken, deviceId) => {
+const setup2FA = async (userId, otpToken, refreshToken) => {
   try {
     const user = await userModel.findOneById(userId)
     if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found')
@@ -286,18 +292,20 @@ const setup2FA = async (userId, otpToken, deviceId) => {
       token: otpToken,
       secret: twoFactorSecretKey.value
     })
-
     if (!isValid) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Invalid 2FA token!')
 
+    const toggledRequire2FA = !user.require_2fa
     const updatedUser = await userModel.update(userId, {
-      require_2fa: true
+      require_2fa: toggledRequire2FA
     }
     )
 
-    const newUserSession = await userModel.updateSession(
-      userId, deviceId,
-      { is_2fa_verified: true, last_login: new Date().valueOf() }
+    const newUserSession = await sessionModel.updateSession(
+      refreshToken,
+      { is_2fa_verified: toggledRequire2FA, last_login: new Date().valueOf() }
     )
+
+    await sessionModel.clearSessions(userId, refreshToken)
 
     return {
       ...pickUser(updatedUser),
@@ -307,7 +315,7 @@ const setup2FA = async (userId, otpToken, deviceId) => {
   } catch (error) { throw error }
 }
 
-const verify2FA = async (userId, otpToken, deviceId) => {
+const verify2FA = async (userId, otpToken, refreshToken) => {
   try {
     const user = await userModel.findOneById(userId)
     if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found')
@@ -323,9 +331,8 @@ const verify2FA = async (userId, otpToken, deviceId) => {
 
     if (!isValid) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Invalid 2FA token!')
 
-    const updatedUserSession = await userModel.updateSession(
-      userId,
-      deviceId,
+    const updatedUserSession = await sessionModel.updateSession(
+      refreshToken,
       { is_2fa_verified: true }
     )
 
@@ -390,7 +397,7 @@ const forgotPassword = async (reqBody) => {
   } catch (error) { throw error }
 }
 
-const resetPassword = async (reqBody) => {
+const resetPassword = async (reqBody, refreshToken) => {
   try {
     const user = await userModel.findOneByEmail(reqBody.email)
     if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found')
@@ -407,6 +414,8 @@ const resetPassword = async (reqBody) => {
       verifyTokenExpiresAt: null
     })
 
+    await sessionModel.clearSessions(user._id, refreshToken)
+
     return true
   } catch (error) { throw error }
 }
@@ -416,7 +425,15 @@ const deleteAccount = async (userId) => {
     const user = await userModel.findOneById(userId)
     if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found')
 
-    await userModel.update(userId, { isActive: false, _destroy: true })
+    await userModel.update(userId, {
+      isActive: false,
+      require_2fa: false,
+      googleId: null,
+      _destroy: true
+    })
+
+    await sessionModel.clearSessions(user._id, refreshToken)
+    return true
   } catch (error) { throw error }
 }
 
