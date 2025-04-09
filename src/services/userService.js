@@ -230,9 +230,10 @@ const update = async (id, reqBody, avt, refreshToken) => {
 
     else if (avt) {
       const result = await cloudinaryProvider.streamUpload(avt.buffer, 'UserAvatars')
+      const regularUrl = result.secure_url.replace(/\/upload\//, '/upload/w_100,h_100,c_fill/')
 
       updatedUser = await userModel.update(id, {
-        avatar: result.secure_url,
+        avatar: regularUrl,
         updatedAt: Date.now()
       })
     }

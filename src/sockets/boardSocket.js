@@ -83,4 +83,12 @@ export const boardSocket = (socket) => {
   socket.on('FE_UPDATED_BOARD_LABELS', ({ boardId, labels }) => {
     socket.broadcast.to(boardId).emit('BE_UPDATED_BOARD_LABELS', labels)
   })
+
+  socket.on('FE_TYPING_CARD_COMMENT', ({ boardId, cardId, displayName }) => {
+    socket.broadcast.to(boardId).emit('BE_TYPING_CARD_COMMENT', { cardId, displayName })
+  })
+
+  socket.on('FE_STOP_TYPING_CARD_COMMENT', ({ boardId, cardId }) => {
+    socket.broadcast.to(boardId).emit('BE_STOP_TYPING_CARD_COMMENT', { cardId })
+  })
 }

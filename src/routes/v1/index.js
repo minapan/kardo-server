@@ -11,9 +11,9 @@ import { sessionRoutes } from './sessionRoute'
 
 const Router = express.Router()
 
-Router.get('/', (req, res) => {
-  res.status(StatusCodes.OK).json({ message: 'APIs V1 are ready to use' })
-})
+// Router.get('/', (req, res) => {
+//   res.status(StatusCodes.OK).json({ message: 'APIs V1 are ready to use' })
+// })
 
 Router.get('/status', (req, res) => {
   const timestamp = new Intl.DateTimeFormat('vi-VN', {
