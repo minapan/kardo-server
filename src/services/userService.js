@@ -16,7 +16,7 @@ import { ObjectId } from 'mongodb'
 import { checkAndCleanProfanity, isBadWord } from '~/utils/badWordsFilter'
 import { sessionModel } from '~/models/sessionModel'
 import { GET_DB } from '~/config/mongodb'
-import { DEL_REDIS, GET_REDIS, SETEX_REDIS } from '../redis/redis'
+import { DEL_REDIS, GET_REDIS, SETEX_REDIS, TTL_REDIS } from '../redis/redis'
 import { sessionService } from './sessionService'
 const uap = require('ua-parser-js')
 
@@ -395,27 +395,36 @@ const forgotPassword = async (reqBody) => {
     const user = await userModel.findOneByEmail(reqBody.email)
     if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found')
 
-    const lastRequest = user.verifyTokenExpiresAt - 600000 // 10 minutes
-    const waitTime = lastRequest + 60 * 1000 - Date.now() // 1 minute - current time
+    const otpKey = `otp:${user._id}`
+    const lastOtpHash = await GET_REDIS(otpKey)
 
-    if (user.verifyToken && user.verifyTokenExpiresAt > Date.now() && waitTime > 0)
-      throw new ApiError(StatusCodes.NOT_ACCEPTABLE, `Please wait ${Math.ceil(waitTime / 1000)} seconds to request again!`)
+    if (lastOtpHash) {
+      const ttl = await TTL_REDIS(otpKey)
+      const lastRequest = Date.now() + ttl - 600
+      const waitTime = lastRequest + 60 - Date.now()
+      if (ttl > 60 && waitTime > 0)
+        throw new ApiError(StatusCodes.NOT_ACCEPTABLE, `Please wait ${Math.ceil(waitTime)} seconds to request again!`)
+    }
+    // const lastRequest = user.verifyTokenExpiresAt - 600000 // 10 minutes
+    // const waitTime = lastRequest + 60 * 1000 - Date.now() // 1 minute - current time
+    // if (user.verifyToken && user.verifyTokenExpiresAt > Date.now() && waitTime > 0)
+    //   throw new ApiError(StatusCodes.NOT_ACCEPTABLE, `Please wait ${Math.ceil(waitTime / 1000)} seconds to request again!`)
 
     const otpToken = generateOTP()
 
-    await userModel.update(user._id, {
-      require_2fa: false,
-      verifyToken: bcrypt.hashSync(otpToken, 8),
-      verifyTokenExpiresAt: Date.now() + 600000 // 10 minutes
-    })
+    await SETEX_REDIS(otpKey, 600, bcrypt.hashSync(otpToken, 8))
+    // await userModel.update(user._id, {
+    //   verifyToken: bcrypt.hashSync(otpToken, 8),
+    //   verifyTokenExpiresAt: Date.now() + 600000 // 10 minutes
+    // })
 
     const subject = 'Reset Your Password 🔑'
     const year = new Date().getFullYear()
     const htmlContent = FORGOT_PASSWORD_EMAIL(user.displayName, otpToken, year)
 
     await brevoProvider.sendEmail(user.email, subject, htmlContent)
-
-    return otpToken
+    // console.log(otpToken)
+    return true
   } catch (error) { throw error }
 }
 
@@ -424,18 +433,27 @@ const resetPassword = async (reqBody, sessionId) => {
     const user = await userModel.findOneByEmail(reqBody.email)
     if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found')
 
-    if (user.verifyTokenExpiresAt < Date.now())
-      throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'OTP token expired. Please request a new one!')
+    const otpKey = `otp:${user._id}`
+    const storedOtpHash = await GET_REDIS(otpKey)
 
-    const isValid = bcrypt.compareSync(reqBody.otpToken, user.verifyToken)
+    if (!storedOtpHash) {
+      throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'OTP token expired. Please request a new one!')
+    }
+    // if (user.verifyTokenExpiresAt < Date.now())
+    //   throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'OTP token expired. Please request a new one!')
+
+    const isValid = await bcrypt.compare(reqBody.otpToken, storedOtpHash)
     if (!isValid) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Invalid OTP token!')
+    // const isValid = bcrypt.compareSync(reqBody.otpToken, user.verifyToken)
+    // if (!isValid) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Invalid OTP token!')
 
     await userModel.update(user._id, {
-      password: bcrypt.hashSync(reqBody.password, 8),
-      verifyToken: null,
-      verifyTokenExpiresAt: null
+      password: bcrypt.hashSync(reqBody.password, 8)
+      // verifyToken: null,
+      // verifyTokenExpiresAt: null
     })
 
+    await DEL_REDIS(otpKey)
     await sessionService.clearSessions(user._id, sessionId)
 
     return true

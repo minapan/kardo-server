@@ -11,7 +11,7 @@ import cookieParser from 'cookie-parser'
 import http from 'http'
 import socketIo from 'socket.io'
 import { boardSocket } from './sockets/boardSocket'
-import { CONNECT_REDIS, DELETE_REDIS, DISCONNECT_REDIS } from './redis/redis'
+import { CONNECT_REDIS, DISCONNECT_REDIS } from './redis/redis'
 
 const START_SERVER = () => {
   const app = express()

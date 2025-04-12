@@ -22,7 +22,7 @@ const verifyAccount = async (req, res, next) => {
 
 const forgotPassword = async (req, res, next) => {
   try {
-    const result = await userService.forgotPassword(req.body, req.jwtDecoded._id)
+    const result = await userService.forgotPassword(req.body)
     res.status(StatusCodes.OK).json(result)
   } catch (error) { next(error) }
 }

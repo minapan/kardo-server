@@ -12,7 +12,7 @@ const client = createClient({
   }
 })
 
-const CONNECT_REDIS = async () => {
+export const CONNECT_REDIS = async () => {
   client.on('error', err => console.log('Redis Client Error', err))
 
   await client.connect()
@@ -20,36 +20,38 @@ const CONNECT_REDIS = async () => {
   return client
 }
 
-const DISCONNECT_REDIS = async () => {
+export const DISCONNECT_REDIS = async () => {
   await client.disconnect()
 }
 
-const SET_REDIS = async (key, value) => {
+export const SET_REDIS = async (key, value) => {
   const res = await client.set(key, value)
   return res
 }
 
-const SETEX_REDIS = async (key, seconds, value) => {
+export const SETEX_REDIS = async (key, seconds, value) => {
   const res = await client.setEx(key, seconds, value)
   return res
 }
 
-const GET_REDIS = async (key) => {
+export const GET_REDIS = async (key) => {
   const res = await client.get(key)
   return res
 }
 
-const DEL_REDIS = async (key) => {
+export const DEL_REDIS = async (key) => {
   const res = await client.del(key)
   return res
 }
 
-const MULTI_REDIS = async (key, seconds, value) => {
+export const MULTI_REDIS = async (key, seconds, value) => {
   const multi = client.multi()
   multi.setEx(key, seconds, value)
   const res = await multi.exec()
   return res
 }
 
-export { CONNECT_REDIS, DISCONNECT_REDIS, SET_REDIS, GET_REDIS, DEL_REDIS, SETEX_REDIS, MULTI_REDIS }
-
+export const TTL_REDIS = async (key) => {
+  const res = await client.ttl(key)
+  return res
+}
