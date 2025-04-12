@@ -11,6 +11,7 @@ import cookieParser from 'cookie-parser'
 import http from 'http'
 import socketIo from 'socket.io'
 import { boardSocket } from './sockets/boardSocket'
+import { CONNECT_REDIS, DELETE_REDIS, DISCONNECT_REDIS } from './redis/redis'
 
 const START_SERVER = () => {
   const app = express()
@@ -61,13 +62,15 @@ const START_SERVER = () => {
   AsyncExitHook(() => {
     console.log('Goodbye Minapan! I am shutting down...')
     CLOSE_DB()
+    DISCONNECT_REDIS()
   })
 }
 
-console.log('Connecting to DB...')
+console.log('Connecting to world...')
 
 CONNECT_DB()
   .then(() => console.log('Connected to DB'))
+  .then(() => CONNECT_REDIS())
   .then(() => START_SERVER())
   .catch((error) => {
     console.error(error)

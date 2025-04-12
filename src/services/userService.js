@@ -16,6 +16,8 @@ import { ObjectId } from 'mongodb'
 import { checkAndCleanProfanity, isBadWord } from '~/utils/badWordsFilter'
 import { sessionModel } from '~/models/sessionModel'
 import { GET_DB } from '~/config/mongodb'
+import { DEL_REDIS, GET_REDIS, SETEX_REDIS } from '../redis/redis'
+import { sessionService } from './sessionService'
 const uap = require('ua-parser-js')
 
 /* eslint-disable no-useless-catch */
@@ -78,7 +80,7 @@ const verifyAccount = async (reqBody) => {
   } catch (error) { throw error }
 }
 
-const login = async (reqBody, deviceId) => {
+const login = async (reqBody, userAgent) => {
   try {
     const existUser = await userModel.findOneByEmail(reqBody.email)
     if (!existUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found')
@@ -86,7 +88,36 @@ const login = async (reqBody, deviceId) => {
     if (!bcrypt.compareSync(reqBody.password, existUser.password))
       throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Your password is incorrect')
 
-    const userInfo = { _id: existUser._id, email: existUser.email }
+    // const existingSession = await sessionModel.findOneSession( existUser._id, userAgent)
+    // if (existingSession) {
+    //   await sessionModel.deleteSession(existingSession._id)
+    //   await DEL_REDIS(`session:${existingSession._id}`)
+    // }
+
+    const sessionCount = await GET_DB().collection(sessionModel.USER_SESSIONS_COLLECTION_NAME).countDocuments({ user_id: new ObjectId(existUser._id) })
+    const maxSessions = existUser.max_sessions || 2
+    if (sessionCount >= maxSessions) {
+      const deletedSessionId = await sessionModel.deleteOldestSession(existUser._id)
+      await DEL_REDIS(`session:${deletedSessionId}`)
+    }
+
+    const ua = uap(userAgent)
+    const result = await sessionModel.insertSession({
+      user_id: new ObjectId(existUser._id),
+      device_info: {
+        userAgent: userAgent,
+        browser: `${ua?.browser?.name || 'Unknown'} ${ua?.browser?.version || ''}`,
+        os: `${ua?.os?.name || 'Unknown'} ${ua?.os?.version || ''}`
+      },
+      is_2fa_verified: false,
+      last_login: new Date().valueOf(),
+      last_active: new Date().valueOf()
+    })
+
+    const currUserSession = await sessionModel.findOneSessionById(result.insertedId.toString())
+    await SETEX_REDIS(`session:${currUserSession?._id}`, ENV.SESSION_LIFE, 'active')
+
+    const userInfo = { _id: existUser._id, email: existUser.email, session_id: currUserSession._id }
 
     const accessToken = await jwtProvider.generateToken(
       userInfo,
@@ -98,29 +129,6 @@ const login = async (reqBody, deviceId) => {
       ENV.REFRESH_TOKEN_SECRET_SIGNATURE,
       ENV.REFRESH_TOKEN_LIFE
     )
-
-    const ua = uap(deviceId)
-
-    const sessionCount = await GET_DB().collection(sessionModel.USER_SESSIONS_COLLECTION_NAME).countDocuments({ user_id: new ObjectId(existUser._id) })
-    const maxSessions = existUser.max_sessions || 2
-    if (sessionCount >= maxSessions) {
-      await sessionModel.deleteOldestSession(existUser._id)
-    }
-
-    let currUserSession = await sessionModel.findOneSession(refreshToken)
-    if (!currUserSession) {
-      currUserSession = await sessionModel.insertSession({
-        user_id: new ObjectId(existUser._id),
-        refresh_token: refreshToken,
-        device_info: {
-          browser: `${ua?.browser?.name || 'Unknown'} ${ua?.browser?.version || ''}`,
-          os: `${ua?.os?.name || 'Unknown'} ${ua?.os?.version || ''}`
-        },
-        is_2fa_verified: false,
-        last_login: new Date().valueOf(),
-        last_active: new Date().valueOf()
-      })
-    }
 
     let resUser = pickUser(existUser)
     resUser.is_2fa_verified = currUserSession.is_2fa_verified
@@ -130,9 +138,39 @@ const login = async (reqBody, deviceId) => {
   } catch (error) { throw error }
 }
 
-const loginWithGoogle = async (user, deviceId) => {
+const loginWithGoogle = async (user, userAgent) => {
   try {
-    const userInfo = await userModel.findOneByEmail(user.email)
+    // const existingSession = await sessionModel.findOneSession( user._id, userAgent)
+    // if (existingSession) {
+    //   await sessionModel.deleteSession(existingSession._id)
+    //   await DEL_REDIS(`session:${existingSession._id}`)
+    // }
+
+    const sessionCount = await GET_DB().collection(sessionModel.USER_SESSIONS_COLLECTION_NAME).countDocuments({ user_id: new ObjectId(user._id) })
+    const maxSessions = user.max_sessions || 2
+    if (sessionCount >= maxSessions) {
+      const deletedSessionId = await sessionModel.deleteOldestSession(user._id)
+      await DEL_REDIS(`session:${deletedSessionId}`)
+    }
+
+    const ua = uap(userAgent)
+    const result = await sessionModel.insertSession({
+      user_id: new ObjectId(user._id),
+      device_info: {
+        userAgent: userAgent,
+        browser: `${ua?.browser?.name || 'Unknown'} ${ua?.browser?.version || ''}`,
+        os: `${ua?.os?.name || 'Unknown'} ${ua?.os?.version || ''}`
+      },
+      is_2fa_verified: false,
+      last_login: new Date().valueOf(),
+      last_active: new Date().valueOf()
+    })
+
+    const currUserSession = await sessionModel.findOneSessionById(result.insertedId.toString())
+    await SETEX_REDIS(`session:${currUserSession?._id}`, ENV.SESSION_LIFE, 'active')
+
+
+    const userInfo = { _id: user._id, email: user.email, session_id: currUserSession._id }
 
     const accessToken = await jwtProvider.generateToken(
       userInfo,
@@ -145,29 +183,6 @@ const loginWithGoogle = async (user, deviceId) => {
       ENV.REFRESH_TOKEN_LIFE
     )
 
-    const ua = uap(deviceId)
-
-    const sessionCount = await GET_DB().collection(sessionModel.USER_SESSIONS_COLLECTION_NAME).countDocuments({ user_id: new ObjectId(userInfo._id) })
-    const maxSessions = userInfo.max_sessions || 2
-    if (sessionCount >= maxSessions) {
-      await sessionModel.deleteOldestSession(userInfo._id)
-    }
-
-    let currUserSession = await sessionModel.findOneSession(refreshToken)
-    if (!currUserSession) {
-      currUserSession = await sessionModel.insertSession({
-        user_id: new ObjectId(userInfo._id),
-        refresh_token: refreshToken,
-        device_info: {
-          browser: `${ua?.browser?.name || 'Unknown'} ${ua?.browser?.version || ''}`,
-          os: `${ua?.os?.name || 'Unknown'} ${ua?.os?.version || ''}`
-        },
-        is_2fa_verified: false,
-        last_login: new Date().valueOf(),
-        last_active: new Date().valueOf()
-      })
-    }
-
     return { accessToken, refreshToken }
   } catch (error) {
     throw error
@@ -176,17 +191,21 @@ const loginWithGoogle = async (user, deviceId) => {
 
 const refreshToken = async (clientRefreshToken) => {
   try {
-    const existSession = await sessionModel.findOneSession(clientRefreshToken)
-    if (!existSession) throw new ApiError(StatusCodes.FORBIDDEN, 'Please login!')
+    if (!clientRefreshToken) throw new ApiError(StatusCodes.FORBIDDEN, 'Please login!')
 
     const refreshTokenDecoded = await jwtProvider.verifyToken(
       clientRefreshToken,
       ENV.REFRESH_TOKEN_SECRET_SIGNATURE
     )
 
+    const sessionStatus = await GET_REDIS(`session:${refreshTokenDecoded.session_id}`)
+    if (!sessionStatus || sessionStatus === 'revoked')
+      throw new ApiError(StatusCodes.FORBIDDEN, 'Session has been revoked!')
+
     const userInfo = {
       _id: refreshTokenDecoded._id,
-      email: refreshTokenDecoded.email
+      email: refreshTokenDecoded.email,
+      session_id: refreshTokenDecoded.session_id
     }
 
     const accessToken = await jwtProvider.generateToken(
@@ -195,13 +214,13 @@ const refreshToken = async (clientRefreshToken) => {
       ENV.ACCESS_TOKEN_LIFE
     )
 
-    await sessionModel.updateSession(clientRefreshToken, { last_active: new Date().valueOf() })
+    await sessionModel.updateSession(refreshTokenDecoded.session_id, { last_active: new Date().valueOf() })
 
     return { accessToken }
   } catch (error) { throw error }
 }
 
-const update = async (id, reqBody, avt, refreshToken) => {
+const update = async (id, reqBody, avt, sessionId) => {
   try {
     const existUser = await userModel.findOneById(id)
     if (!existUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found')
@@ -218,7 +237,7 @@ const update = async (id, reqBody, avt, refreshToken) => {
         updatedAt: Date.now()
       })
 
-      await sessionModel.clearSessions(existUser._id, refreshToken)
+      await sessionService.clearSessions(existUser._id, sessionId)
     }
 
     else if (reqBody.new_password) {
@@ -275,12 +294,13 @@ const get2FaQrCode = async (userId) => {
     )
 
     const QRCodeImgUrl = await qrcode.toDataURL(optAuthToken)
+    // console.log(authenticator.generate(twoFactorSecretKeyValue))
 
     return { qrcode: QRCodeImgUrl }
   } catch (error) { throw error }
 }
 
-const setup2FA = async (userId, otpToken, refreshToken) => {
+const setup2FA = async (userId, otpToken, sessionId) => {
   try {
     const user = await userModel.findOneById(userId)
     if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found')
@@ -302,11 +322,11 @@ const setup2FA = async (userId, otpToken, refreshToken) => {
     )
 
     const newUserSession = await sessionModel.updateSession(
-      refreshToken,
+      sessionId,
       { is_2fa_verified: toggledRequire2FA, last_login: new Date().valueOf() }
     )
 
-    await sessionModel.clearSessions(userId, refreshToken)
+    await sessionService.clearSessions(userId, sessionId)
 
     return {
       ...pickUser(updatedUser),
@@ -316,7 +336,7 @@ const setup2FA = async (userId, otpToken, refreshToken) => {
   } catch (error) { throw error }
 }
 
-const verify2FA = async (userId, otpToken, refreshToken) => {
+const verify2FA = async (userId, otpToken, sessionId) => {
   try {
     const user = await userModel.findOneById(userId)
     if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found')
@@ -333,7 +353,7 @@ const verify2FA = async (userId, otpToken, refreshToken) => {
     if (!isValid) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Invalid 2FA token!')
 
     const updatedUserSession = await sessionModel.updateSession(
-      refreshToken,
+      sessionId,
       { is_2fa_verified: true }
     )
 
@@ -345,21 +365,22 @@ const verify2FA = async (userId, otpToken, refreshToken) => {
   } catch (error) { throw error }
 }
 
-const logout = async (refreshToken) => {
+const logout = async (sessionId) => {
   try {
-    const session = await sessionModel.findOneSession(refreshToken)
+    const session = await sessionModel.findOneSessionById(sessionId)
     if (session) await sessionModel.deleteSession(session._id)
 
+    await DEL_REDIS(`session:${sessionId}`)
     return true
   } catch (error) { throw error }
 }
 
-const getUser = async (refreshToken, userId) => {
+const getUser = async (sessionId, userId) => {
   try {
     const user = await userModel.findOneById(userId)
     if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'User not found!')
 
-    let currUserSession = await sessionModel.findOneSession(refreshToken)
+    let currUserSession = await sessionModel.findOneSessionById(sessionId)
 
     let resUser = pickUser(user)
     resUser.is_2fa_verified = currUserSession.is_2fa_verified
@@ -398,7 +419,7 @@ const forgotPassword = async (reqBody) => {
   } catch (error) { throw error }
 }
 
-const resetPassword = async (reqBody, refreshToken) => {
+const resetPassword = async (reqBody, sessionId) => {
   try {
     const user = await userModel.findOneByEmail(reqBody.email)
     if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found')
@@ -415,13 +436,13 @@ const resetPassword = async (reqBody, refreshToken) => {
       verifyTokenExpiresAt: null
     })
 
-    await sessionModel.clearSessions(user._id, refreshToken)
+    await sessionService.clearSessions(user._id, sessionId)
 
     return true
   } catch (error) { throw error }
 }
 
-const deleteAccount = async (userId) => {
+const deleteAccount = async (userId, sessionId) => {
   try {
     const user = await userModel.findOneById(userId)
     if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found')
@@ -433,7 +454,7 @@ const deleteAccount = async (userId) => {
       _destroy: true
     })
 
-    await sessionModel.clearSessions(user._id, refreshToken)
+    await sessionService.clearSessions(user._id, sessionId)
     return true
   } catch (error) { throw error }
 }

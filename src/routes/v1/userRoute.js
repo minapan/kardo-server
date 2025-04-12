@@ -16,6 +16,9 @@ Router.route('/verify')
   .put(userValidation.verifyAccount, userController.verifyAccount)
 
 Router.route('/logout')
+  .put(authMiddleware.isAuthoried, userController.logout)
+
+Router.route('/logged-out')
   .put(userController.logout)
 
 Router.route('/refresh-token')

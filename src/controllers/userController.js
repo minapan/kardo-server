@@ -22,14 +22,14 @@ const verifyAccount = async (req, res, next) => {
 
 const forgotPassword = async (req, res, next) => {
   try {
-    const result = await userService.forgotPassword(req.body)
+    const result = await userService.forgotPassword(req.body, req.jwtDecoded._id)
     res.status(StatusCodes.OK).json(result)
   } catch (error) { next(error) }
 }
 
 const resetPassword = async (req, res, next) => {
   try {
-    const result = await userService.resetPassword(req.body, req.cookies?.refreshToken)
+    const result = await userService.resetPassword(req.body, req.jwtDecoded.session_id)
     res.status(StatusCodes.OK).json(result)
   } catch (error) { next(error) }
 }
@@ -59,8 +59,7 @@ const login = async (req, res, next) => {
 const logout = async (req, res, next) => {
   try {
     let isDeletedSession = false
-    if (req.cookies?.refreshToken)
-      isDeletedSession = await userService.logout(req.cookies?.refreshToken)
+    if (req.jwtDecoded?.session_id) isDeletedSession = await userService.logout(req.jwtDecoded?.session_id)
 
     res.clearCookie('accessToken')
     res.clearCookie('refreshToken')
@@ -86,7 +85,7 @@ const refreshToken = async (req, res, next) => {
 
 const update = async (req, res, next) => {
   try {
-    const updatedUser = await userService.update(req.jwtDecoded._id, req.body, req.file, req.cookies?.refreshToken)
+    const updatedUser = await userService.update(req.jwtDecoded._id, req.body, req.file, req.jwtDecoded.session_id)
     res.status(StatusCodes.OK).json(updatedUser)
   } catch (error) { next(error) }
 }
@@ -100,14 +99,14 @@ const get2FaQrCode = async (req, res, next) => {
 
 const setup2FA = async (req, res, next) => {
   try {
-    const result = await userService.setup2FA(req.jwtDecoded._id, req.body.otpToken, req.cookies?.refreshToken)
+    const result = await userService.setup2FA(req.jwtDecoded._id, req.body.otpToken, req.jwtDecoded.session_id)
     res.status(StatusCodes.OK).json(result)
   } catch (error) { next(error) }
 }
 
 const verify2FA = async (req, res, next) => {
   try {
-    const result = await userService.verify2FA(req.jwtDecoded._id, req.body.otpToken, req.cookies?.refreshToken)
+    const result = await userService.verify2FA(req.jwtDecoded._id, req.body.otpToken, req.jwtDecoded.session_id)
     res.status(StatusCodes.OK).json(result)
   } catch (error) { next(error) }
 }
@@ -143,14 +142,14 @@ const googleCallback = [
 
 const getUser = async (req, res, next) => {
   try {
-    const result = await userService.getUser(req.cookies?.refreshToken, req.jwtDecoded._id)
+    const result = await userService.getUser(req.jwtDecoded.session_id, req.jwtDecoded._id)
     res.status(StatusCodes.OK).json(result)
   } catch (error) { next(error) }
 }
 
 const deleteAccount = async (req, res, next) => {
   try {
-    const result = await userService.deleteAccount(req.jwtDecoded._id)
+    const result = await userService.deleteAccount(req.jwtDecoded._id, req.jwtDecoded.session_id)
     res.status(StatusCodes.OK).json(result)
   } catch (error) { next(error) }
 }

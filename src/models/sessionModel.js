@@ -6,8 +6,8 @@ import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
 const USER_SESSIONS_COLLECTION_NAME = 'user_sessions'
 const USER_SESSIONS_COLLECTION_SCHEMA = Joi.object({
   user_id: Joi.string().required().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE),
-  refresh_token: Joi.string().required(),
   device_info: Joi.object({
+    userAgent: Joi.string(),
     browser: Joi.string(),
     os: Joi.string()
   }).allow(null),
@@ -27,7 +27,10 @@ const deleteOldestSession = async (user_id) => {
       .sort({ last_active: 1 })
       .limit(1)
       .toArray()
+    const idDelete = session[0]._id.toString()
+
     await GET_DB().collection(USER_SESSIONS_COLLECTION_NAME).deleteOne({ _id: session[0]._id })
+    return idDelete
   } catch (error) { throw new Error(error) }
 }
 
@@ -40,16 +43,25 @@ const deleteOldestSessions = async (user_id, maxSessions) => {
       .toArray()
     const keepIds = sessionsToKeep.map(s => s._id)
 
+    const sessionsToDelete = await GET_DB().collection(USER_SESSIONS_COLLECTION_NAME)
+      .find({ user_id: new ObjectId(user_id), _id: { $nin: keepIds } })
+      .toArray()
+
     await GET_DB().collection(USER_SESSIONS_COLLECTION_NAME).deleteMany({
       user_id: new ObjectId(user_id),
       _id: { $nin: keepIds }
     })
+
+    return sessionsToDelete
   } catch (error) { throw new Error(error) }
 }
 
-const findOneSession = async (refresh_token) => {
+const findOneSession = async (userId, userAgent) => {
   try {
-    return await GET_DB().collection(USER_SESSIONS_COLLECTION_NAME).findOne({ refresh_token })
+    return await GET_DB().collection(USER_SESSIONS_COLLECTION_NAME).findOne({
+      user_id: new ObjectId(userId),
+      'device_info.userAgent': userAgent
+    })
   } catch (error) { throw new Error(error) }
 }
 
@@ -75,10 +87,10 @@ const insertSession = async (data) => {
   } catch (error) { throw new Error(error) }
 }
 
-const updateSession = async (refreshToken, updateData) => {
+const updateSession = async (sessionId, updateData) => {
   try {
     const result = await GET_DB().collection(USER_SESSIONS_COLLECTION_NAME).findOneAndUpdate(
-      { refresh_token: refreshToken },
+      { _id: new ObjectId(sessionId) },
       { $set: updateData },
       { returnDocument: 'after' }
     )
@@ -97,9 +109,20 @@ const deleteSession = async (id) => {
   } catch (error) { throw new Error(error) }
 }
 
-const clearSessions = async (userId, refreshToken) => {
+const clearSessions = async (userId, sessionId) => {
   try {
-    return await GET_DB().collection(USER_SESSIONS_COLLECTION_NAME).deleteMany({ user_id: new ObjectId(userId), refresh_token: { $ne: refreshToken } })
+    const sessionsToDel = await GET_DB().collection(USER_SESSIONS_COLLECTION_NAME)
+      .find({ user_id: new ObjectId(userId), _id: { $ne: new ObjectId(sessionId) } })
+      .toArray()
+
+    const deleteIds = sessionsToDel.map(s => s._id)
+
+    await GET_DB().collection(USER_SESSIONS_COLLECTION_NAME).deleteMany({
+      user_id: new ObjectId(userId),
+      _id: { $in: deleteIds }
+    })
+
+    return sessionsToDel
   } catch (error) { throw new Error(error) }
 }
 
