@@ -1,4 +1,5 @@
 import express from 'express'
+import { authLimiter } from '~/config/rateLimit'
 import { userController } from '~/controllers/userController'
 import { authMiddleware } from '~/middlewares/authMiddleware'
 import { multerMiddleware } from '~/middlewares/multerMiddleware'
@@ -7,10 +8,10 @@ import { userValidation } from '~/validations/userValidation'
 const Router = express.Router()
 
 Router.route('/register')
-  .post(userValidation.createNew, userController.createNew)
+  .post(authLimiter, userValidation.createNew, userController.createNew)
 
 Router.route('/login')
-  .post(userValidation.login, userController.login)
+  .post(authLimiter, userValidation.login, userController.login)
 
 Router.route('/verify')
   .put(userValidation.verifyAccount, userController.verifyAccount)
@@ -25,7 +26,7 @@ Router.route('/refresh-token')
   .get(userController.refreshToken)
 
 Router.route('/forgot-password')
-  .post(userController.forgotPassword)
+  .post(authLimiter, userController.forgotPassword)
 
 Router.route('/reset-password')
   .put(userValidation.resetPassword, userController.resetPassword)

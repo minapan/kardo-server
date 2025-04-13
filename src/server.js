@@ -12,6 +12,7 @@ import http from 'http'
 import socketIo from 'socket.io'
 import { boardSocket } from './sockets/boardSocket'
 import { CONNECT_REDIS, DISCONNECT_REDIS } from './redis/redis'
+import { limiter } from './config/rateLimit'
 
 const START_SERVER = () => {
   const app = express()
@@ -27,6 +28,8 @@ const START_SERVER = () => {
   app.use((req, res, next) => {
     cors(corsOptions(req, res, next))(req, res, next)
   })
+
+  app.use(limiter)
 
   app.use(express.json()) // Middleware to parse JSON requests
 
