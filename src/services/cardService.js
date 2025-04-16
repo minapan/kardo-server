@@ -54,11 +54,11 @@ const update = async (id, reqBody, cardCover, user) => {
     }
 
     else if (reqBody.labelInfo) {
-      updatedCard = await cardModel.updateLabels(id, reqBody.labelInfo)
+      updatedCard = await cardModel.updateLabels(id, ...checkAndCleanProfanity(reqBody.labelInfo))
     }
 
     else if (reqBody.checklistInfo) {
-      updatedCard = await cardModel.updateChecklists(id, reqBody.checklistInfo)
+      updatedCard = await cardModel.updateChecklists(id, ...checkAndCleanProfanity(reqBody.checklistInfo))
     }
 
     else {

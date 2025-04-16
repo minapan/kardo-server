@@ -1,9 +1,9 @@
 {
-  "name": "trello-minapan-api",
+  "name": "kardo-server",
   "private": true,
   "version": "1.0.0",
-  "author": "Minapan",
-  "description": "Trello clone API",
+  "author": "MinhNhatPhan",
+  "description": "Kardo - A modern task manager built with MERN.",
   "engines": {
     "node": ">=18.x"
   },

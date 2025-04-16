@@ -2,16 +2,16 @@ export const CONFIRMATION_EMAIL = (displayName, verifyUrl, year) => `
   <div style="max-width: 600px; margin: auto; background: #ffffff; padding: 40px; border-radius: 12px;   box-shadow: 0 4px 12px rgba(0,0,0,0.1); font-family: Arial, sans-serif; text-align: center;">
 
     <!-- Logo -->
-    <img src="https://cdn-icons-png.flaticon.com/512/2504/2504834.png" alt="Trello Minapan"
+    <img src="https://cdn-icons-png.flaticon.com/512/2504/2504834.png" alt="Kardo Minapan"
       style="width: 80px; height: 80px; margin-bottom: 14px; border-radius: 12px;">
 
     <!-- Title -->
-    <h2 style="color: #333; font-size: 24px; font-weight: bold;">Trello Minapan</h2>
+    <h2 style="color: #333; font-size: 24px; font-weight: bold;">Kardo Minapan</h2>
 
     <!-- Message -->
     <p style="font-size: 16px; color: #555; line-height: 1.6; max-width: 500px; margin: auto;">
       Hello <strong>${displayName}</strong>,
-      welcome to <strong>Trello Minapan</strong>!
+      welcome to <strong>Kardo Minapan</strong>!
       To complete your registration, please verify your email by clicking the button below.
       (This verification link will expire in 10 minutes)
     </p>
@@ -56,11 +56,11 @@ export const FORGOT_PASSWORD_EMAIL = (displayName, otpCode, year) => `
   <div style="max-width: 600px; margin: auto; background: #ffffff; padding: 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); font-family: Arial, sans-serif; text-align: center;">
 
     <!-- Logo -->
-    <img src="https://cdn-icons-png.flaticon.com/512/2504/2504834.png" alt="Trello Minapan"
+    <img src="https://cdn-icons-png.flaticon.com/512/2504/2504834.png" alt="Kardo Minapan"
       style="width: 80px; height: 80px; margin-bottom: 14px; border-radius: 12px;">
 
     <!-- Title -->
-    <h2 style="color: #333; font-size: 24px; font-weight: bold;">Trello Minapan</h2>
+    <h2 style="color: #333; font-size: 24px; font-weight: bold;">Kardo Minapan</h2>
 
     <!-- Message -->
     <p style="font-size: 16px; color: #555; line-height: 1.6; max-width: 500px; margin: auto;">
@@ -109,16 +109,16 @@ export const WELCOME_GOOGLE_EMAIL = (displayName, actionUrl, year) => `
   <div style="max-width: 600px; margin: auto; background: #ffffff; padding: 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); font-family: Arial, sans-serif; text-align: center;">
 
     <!-- Logo -->
-    <img src="https://cdn-icons-png.flaticon.com/512/2504/2504834.png" alt="Trello Minapan"
+    <img src="https://cdn-icons-png.flaticon.com/512/2504/2504834.png" alt="Kardo Minapan"
       style="width: 80px; height: 80px; margin-bottom: 14px; border-radius: 12px;">
 
     <!-- Title -->
-    <h2 style="color: #333; font-size: 24px; font-weight: bold;">Trello Minapan</h2>
+    <h2 style="color: #333; font-size: 24px; font-weight: bold;">Kardo Minapan</h2>
 
     <!-- Message -->
     <p style="font-size: 16px; color: #555; line-height: 1.6; max-width: 500px; margin: auto;">
       Hello <strong>${displayName}</strong>,
-      Welcome to Trello Minapan! Your account has been successfully created using Google. We're excited to have you on board!
+      Welcome to Kardo Minapan! Your account has been successfully created using Google. We're excited to have you on board!
     </p>
 
     <!-- Call to Action -->
