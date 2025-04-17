@@ -2,6 +2,8 @@
 
 Kardo is a modern Kanban-style task management app that helps individuals and teams **organize tasks**, **collaborate in real time**, and **stay productive** — all in one sleek and intuitive platform.
 
+![Preview](https://kardo.nhatphan.id.vn/hero.png)
+
 👉 [Live Demo](https://kardo.nhatphan.id.vn)  
 📁 [Frontend Repo](https://github.com/minapan/kardo-client)
 
@@ -12,7 +14,6 @@ Kardo is a modern Kanban-style task management app that helps individuals and te
 - [✨ Features](#-features)
 - [🛠 Tech Stack](#-tech-stack)
 - [🚀 Getting Started](#-getting-started)
-- [📸 Demo Preview](#-demo-preview)
 - [🙋‍♂️ Author](#-author)
 
 ---

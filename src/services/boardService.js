@@ -98,11 +98,26 @@ const uploadCoverImage = async (file) => {
   } catch (error) { throw error }
 }
 
+const deleteBoard = async (boardId, userId) => {
+  try {
+    const board = await boardModel.findOneById(boardId)
+    if (!board) throw new ApiError(StatusCodes.NOT_FOUND, 'Board not found!')
+
+    const boardOwnerIds = [...board.ownerIds].toString()
+    if (!boardOwnerIds?.includes(userId)) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'You are not the owner of this board')
+
+    await boardModel.deleteOneById(boardId)
+
+    return { deleteResult: 'Successfully!' }
+  } catch (error) { throw error }
+}
+
 export const boardService = {
   createNew,
   getDetails,
   update,
   moveCardToDiffCol,
   getBoards,
-  uploadCoverImage
+  uploadCoverImage,
+  deleteBoard
 }

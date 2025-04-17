@@ -44,11 +44,19 @@ const uploadCoverImage = async (req, res, next) => {
   } catch (error) { next(error) }
 }
 
+const deleteBoard = async (req, res, next) => {
+  try {
+    const result = await boardService.deleteBoard(req.params.id, req.jwtDecoded._id)
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) { next(error) }
+}
+
 export const boardController = {
   createNew,
   getDetails,
   update,
   moveCardToDiffCol,
   getBoards,
-  uploadCoverImage
+  uploadCoverImage,
+  deleteBoard
 }

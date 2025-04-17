@@ -40,6 +40,10 @@ export const boardSocket = (socket) => {
     socket.broadcast.emit('BE_USER_INVITED_TO_BOARD', invitation)
   })
 
+  socket.on('FE_DELETED_BOARD', ({ boardId }) => {
+    socket.broadcast.to(boardId).emit('BE_DELETED_BOARD')
+  })
+
   socket.on('FE_USER_ACCEPTED_INVITATION', ({ boardId, user }) => {
     if (!joinedBoards.has(boardId)) {
       socket.join(boardId)

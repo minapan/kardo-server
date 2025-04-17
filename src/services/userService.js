@@ -88,11 +88,11 @@ const login = async (reqBody, userAgent) => {
     if (!bcrypt.compareSync(reqBody.password, existUser.password))
       throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Your password is incorrect')
 
-    // const existingSession = await sessionModel.findOneSession( existUser._id, userAgent)
-    // if (existingSession) {
-    //   await sessionModel.deleteSession(existingSession._id)
-    //   await DEL_REDIS(`session:${existingSession._id}`)
-    // }
+    const existingSession = await sessionModel.findOneSession( existUser._id, userAgent)
+    if (existingSession) {
+      await sessionModel.deleteSession(existingSession._id)
+      await DEL_REDIS(`session:${existingSession._id}`)
+    }
 
     const sessionCount = await GET_DB().collection(sessionModel.USER_SESSIONS_COLLECTION_NAME).countDocuments({ user_id: new ObjectId(existUser._id) })
     const maxSessions = existUser.max_sessions || 2
@@ -140,11 +140,11 @@ const login = async (reqBody, userAgent) => {
 
 const loginWithGoogle = async (user, userAgent) => {
   try {
-    // const existingSession = await sessionModel.findOneSession( user._id, userAgent)
-    // if (existingSession) {
-    //   await sessionModel.deleteSession(existingSession._id)
-    //   await DEL_REDIS(`session:${existingSession._id}`)
-    // }
+    const existingSession = await sessionModel.findOneSession( user._id, userAgent)
+    if (existingSession) {
+      await sessionModel.deleteSession(existingSession._id)
+      await DEL_REDIS(`session:${existingSession._id}`)
+    }
 
     const sessionCount = await GET_DB().collection(sessionModel.USER_SESSIONS_COLLECTION_NAME).countDocuments({ user_id: new ObjectId(user._id) })
     const maxSessions = user.max_sessions || 2

@@ -24,4 +24,7 @@ Router.route('/')
   .get(authMiddleware.isAuthoried, boardController.getBoards)
   .post(authMiddleware.isAuthoried, boardValidation.createNew, boardController.createNew)
 
+Router.route('/:id')
+  .delete(authMiddleware.isAuthoried, boardController.deleteBoard)
+
 export const boardRoutes = Router

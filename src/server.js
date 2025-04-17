@@ -29,6 +29,7 @@ const START_SERVER = () => {
     cors(corsOptions(req, res, next))(req, res, next)
   })
 
+  app.set('trust proxy', true)
   app.use(limiter)
 
   app.use(express.json()) // Middleware to parse JSON requests
